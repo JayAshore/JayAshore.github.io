@@ -1,0 +1,770 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>面试官听了一整天RAG和Agent，到你这儿终于不一样了？ | JayAshoreの博客</title><meta name="author" content="JayAshore"><meta name="copyright" content="JayAshore"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="AI岗面试正在掉进“同质化陷阱”，怎么才能更好的拿下Agent岗位？帮一个同学做模拟面试，他简历上写了一个Agent项目，技术栈列得很全：RAG、Function Calling、Memory、ReAct，该有的都有。  我问他：“你这个项目最大的亮点是什么？” 他愣了3秒  然后开始说：“嗯，我用了RAG，然后做了分块优化，然后还加了Memory，对，还有Multi-Agent架构。” 我：“你">
+<meta property="og:type" content="article">
+<meta property="og:title" content="面试官听了一整天RAG和Agent，到你这儿终于不一样了？">
+<meta property="og:url" content="https://jayashore.github.io/posts/1788660630/index.html">
+<meta property="og:site_name" content="JayAshoreの博客">
+<meta property="og:description" content="AI岗面试正在掉进“同质化陷阱”，怎么才能更好的拿下Agent岗位？帮一个同学做模拟面试，他简历上写了一个Agent项目，技术栈列得很全：RAG、Function Calling、Memory、ReAct，该有的都有。  我问他：“你这个项目最大的亮点是什么？” 他愣了3秒  然后开始说：“嗯，我用了RAG，然后做了分块优化，然后还加了Memory，对，还有Multi-Agent架构。” 我：“你">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jayashore.github.io/img/avatar.jpg">
+<meta property="article:published_time" content="2026-09-06T02:10:30.000Z">
+<meta property="article:modified_time" content="2026-09-06T02:10:30.000Z">
+<meta property="article:author" content="JayAshore">
+<meta property="article:tag" content="找工作">
+<meta property="article:tag" content="经验分享">
+<meta property="article:tag" content="面试">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jayashore.github.io/img/avatar.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "面试官听了一整天RAG和Agent，到你这儿终于不一样了？",
+  "url": "https://jayashore.github.io/posts/1788660630/",
+  "image": "https://jayashore.github.io/img/avatar.jpg",
+  "datePublished": "2026-09-06T02:10:30.000Z",
+  "dateModified": "2026-09-06T02:10:30.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "JayAshore",
+      "url": "https://jayashore.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="https://jayashore.github.io/posts/1788660630/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.7.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        const data = { value }
+
+        if (ttl != null) {
+          data.expiry = Date.now() + ttl * 86400000
+        }
+
+        localStorage.setItem(key, JSON.stringify(data))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return
+
+        try {
+          const data = JSON.parse(itemStr)
+
+          if (data.expiry && Date.now() > data.expiry) {
+            localStorage.removeItem(key)
+            return
+          }
+
+          return data.value
+        } catch {
+          localStorage.removeItem(key)
+        }
+      }
+    }
+
+    const scriptCache = new Map()
+    const cssCache = new Map()
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => {
+        if (scriptCache.has(url)) {
+          return scriptCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+
+          script.src = url
+          script.async = true
+
+          for (const key in attr) {
+            script.setAttribute(key, attr[key])
+          }
+
+          script.onload = resolve
+          script.onerror = reject
+
+          document.head.appendChild(script)
+        })
+
+        scriptCache.set(url, promise)
+
+        return promise
+      },
+      getCSS: (url, id) => {
+        if (cssCache.has(url)) {
+          return cssCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const link = document.createElement('link')
+
+          link.rel = 'stylesheet'
+          link.href = url
+
+          if (id) {
+            link.id = id
+          }
+
+          link.onload = resolve
+          link.onerror = reject
+
+          document.head.appendChild(link)
+        })
+
+        cssCache.set(url, promise)
+
+        return promise
+      },
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      const activateDarkMode = () => {
+        document.documentElement.dataset.theme = 'dark'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.dataset.theme = 'light'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"limitCount":50,"languages":{"author":"作者: JayAshore","link":"链接: ","source":"来源: JayAshoreの博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"已切换为繁体中文","cht_to_chs":"已切换为简体中文","day_to_night":"已切换为深色模式","night_to_day":"已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '面试官听了一整天RAG和Agent，到你这儿终于不一样了？',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">14</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">25</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-book"></i><span> 文章</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li><li><a class="site-page child" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/charts/"><i class="fa-fw fas fa-chart-column"></i><span> 统计</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-earth-asia"></i><span> 社交</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fas fa-images"></i><span> 相册</span></a></li><li><a class="site-page child" href="/message/"><i class="fa-fw fas fa-comments"></i><span> 留言</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/shuoshuo/"><i class="fa-fw fas fa-comment-dots"></i><span> 说说</span></a></div><div class="menus_item"><a class="site-page" href="/tools/"><i class="fa-fw fas fa-toolbox"></i><span> 工具</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/default_top_img.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">JayAshoreの博客</span></a><a class="nav-page-title" href="/"><span class="site-name">面试官听了一整天RAG和Agent，到你这儿终于不一样了？</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-book"></i><span> 文章</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li><li><a class="site-page child" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/charts/"><i class="fa-fw fas fa-chart-column"></i><span> 统计</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-earth-asia"></i><span> 社交</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fas fa-images"></i><span> 相册</span></a></li><li><a class="site-page child" href="/message/"><i class="fa-fw fas fa-comments"></i><span> 留言</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/shuoshuo/"><i class="fa-fw fas fa-comment-dots"></i><span> 说说</span></a></div><div class="menus_item"><a class="site-page" href="/tools/"><i class="fa-fw fas fa-toolbox"></i><span> 工具</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">面试官听了一整天RAG和Agent，到你这儿终于不一样了？</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-09-06T02:10:30.000Z" title="发表于 2026-09-06 10:10 10:10:30">2026-09-06 10:10</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-09-06T02:10:30.000Z" title="更新于 2026-09-06 10:10 10:10:30">2026-09-06 10:10</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%89%BE%E5%B7%A5%E4%BD%9C/">找工作</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">2.1k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>6分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="AI岗面试正在掉进“同质化陷阱”，怎么才能更好的拿下Agent岗位？"><a href="#AI岗面试正在掉进“同质化陷阱”，怎么才能更好的拿下Agent岗位？" class="headerlink" title="AI岗面试正在掉进“同质化陷阱”，怎么才能更好的拿下Agent岗位？"></a>AI岗面试正在掉进“同质化陷阱”，怎么才能更好的拿下Agent岗位？</h1><p>帮一个同学做模拟面试，他简历上写了一个Agent项目，技术栈列得很全：RAG、Function Calling、Memory、ReAct，该有的都有。</p>
+<blockquote>
+<p>我问他：“你这个项目最大的亮点是什么？”</p>
+<p>他愣了3秒  然后开始说：“嗯，我用了RAG，然后做了分块优化，然后还加了Memory，对，还有Multi-Agent架构。”</p>
+<p>我：“你等一下，你是在报菜名还是在讲亮点？”</p>
+</blockquote>
+<p>这3秒的空白，其实暴露了一个普遍的问题——<strong>很多人做Agent项目的时候，心思都花在把功能跑通上，没花时间想清楚一件事：如果面试官只给你30秒，你怎么让他记住你的项目</strong></p>
+<p>这30秒，决定了他接下来20分钟追问的方向！</p>
+<h1 id="一、AI岗面试正在掉进“同质化陷阱”"><a href="#一、AI岗面试正在掉进“同质化陷阱”" class="headerlink" title="一、AI岗面试正在掉进“同质化陷阱”"></a>一、AI岗面试正在掉进“同质化陷阱”</h1><p>感觉今年秋招，AI岗面试正在变成一个巨大的“同质化陷阱”</p>
+<ul>
+<li>有个大厂面试官原话是这么说的：“现在每天看简历，十个有八个的项目描述长得一模一样——智能客服、基础RAG、Lora微调提点。看到第四份的时候脑子已经不转了，剩下的全凭肌肉记忆往下翻。”</li>
+<li>另一位面试官的反馈更直接：“现在RAG项目被培训机构搞的有点烂大街了，十个简历八个是RAG项目，导致现在面试的时候看见RAG就不想看了。而且面了几个RAG项目水分很大，深一点的内容基本上不懂。”</li>
+</ul>
+<blockquote>
+<p>2026年，基础RAG和LoRA微调已经成了默认基础能力，就像你不会在简历上写“熟练使用Word”一样。如果项目里只有这些，面试官的技术栈那一栏直接跳过，问都懒得问</p>
+</blockquote>
+<p>问题不在于RAG没有技术含量</p>
+<p>RAG管线搭起来不容易，微调实验跑通也要踩一堆坑。<strong>问题在于当所有人都在简历上写同一套东西的时候，面试官的记忆点就被稀释成零了。</strong></p>
+<h1 id="二、面试官真正想听的是什么？"><a href="#二、面试官真正想听的是什么？" class="headerlink" title="二、面试官真正想听的是什么？"></a>二、面试官真正想听的是什么？</h1><p>面试官问你项目亮点，他不是在考你技术名词背得熟不熟，他是在考你对自己做过的事情有没有自己的判断</p>
+<p>什么叫有判断？</p>
+<p>你用了RAG，这不算亮点，因为这是2026年做Agent项目的基本操作。你用了RAG并且知道在什么数据规模下该用稀疏检索而不是稠密检索，这才是判断</p>
+<blockquote>
+<p>但大部分同学走到面试现场，准备的都是第一种回答</p>
+<p>面试官一追问：“你为什么用稠密检索？”</p>
+<p>你说：“因为效果好。”</p>
+<p>再追问：“好在哪里？”</p>
+<p>你就开始卡了</p>
+</blockquote>
+<p><strong>卡的原因不是你不知道，而是你当时做项目的时候，根本没有做过那个对比实验。你是跟着教程走的，教程说用这个，你就用了。</strong></p>
+<p>所以面试官问亮点，他真正想听的是第二层——你做这个东西的时候，有没有自己做过选择</p>
+<h1 id="三、同质化陷阱的四个通病"><a href="#三、同质化陷阱的四个通病" class="headerlink" title="三、同质化陷阱的四个通病"></a>三、同质化陷阱的四个通病</h1><p>结合面试官的真实反馈，简历上的Agent项目普遍<strong>有四个问题</strong>：</p>
+<p><strong>第一，功能堆砌，没有技术判断力</strong>。 项目文档一打开，功能列表能列两屏——支持多轮对话、支持文件上传、支持联网搜索、支持多种LLM切换。看起来很全，但一问设计思路就卡壳：“为什么选BM25做召回而不是密集检索？”“检索结果不相关的时候怎么办？”答不上来。面试官要的不是你用了多少工具，而是你在关键节点上做过什么决策</p>
+<p><strong>第二，深度缺失，聊不出Trade-off</strong>。面试里最怕听到的回答是“我就是照着教程搭的”。一个项目能不能聊出深度，关键看你有没有在某个模块上主动做过取舍。幻觉检测失败之后，你是继续重试还是降级给兜底回复？文档评分低于阈值时，你是扩大检索范围还是换一个知识库？这些决策背后才是工程能力的体现</p>
+<p><strong>第三，场景同质化严重</strong>。智能客服、知识库问答、文档助手——这三个场景已经快把面试官的耐心耗尽了。当一个面试官一周看五十份简历，四十五份都长一样的时候，他很难对你的项目产生任何好奇</p>
+<p><strong>第四，验证逻辑不闭环</strong>。很多人简历上写“问答准确率提升15%”，但细问之下发现这个指标是自己拿二十条测试数据跑出来的，既没有基线对比，也没有业务场景支撑。面试官一问“你这个准确率在真实业务里意味着什么”，直接就露馅了</p>
+<h1 id="四、怎么破？一个能让人记住的亮点，只需要三件事"><a href="#四、怎么破？一个能让人记住的亮点，只需要三件事" class="headerlink" title="四、怎么破？一个能让人记住的亮点，只需要三件事"></a>四、怎么破？一个能让人记住的亮点，只需要三件事</h1><p>面试官想听的亮点，从来不是你用了什么技术栈。他说：“面试官看的是你做决策的过程，不是看你有没有选到标准答案❌️”</p>
+<ul>
+<li><p><strong>第一，你解决了一个什么问题</strong></p>
+<p>这个问题要具体。不能泛泛说“提升了效果”，要说清楚“原来是什么样，有什么具体的痛点”。比如“我的Agent在长对话场景下，大概在第8轮左右开始答非所问。排查下来发现是Memory里塞了太多无关的历史消息，有用的信息被淹没了。”这个痛点一说出来，面试官就知道你不是在做玩具项目，你在面对真实的问题</p>
+</li>
+<li><p><strong>第二，你做了什么选择</strong><br>不是“我用了某某技术”，而是“我当时面临两个方案——A和B，我选了A，原因是这样这样；我放弃了B，原因是那样那样”。哪怕你最终选的那个方案后来被证明不是最优的，也没关系</p>
+</li>
+<li><p><strong>第三，结果是什么，局限在哪</strong><br>结果要说具体数字。局限要主动说。主动说局限，比面试官追问出来再承认，给人的感觉完全不一样。一个人主动说局限，说明他对自己的项目有清醒的认识。一个人被追问才承认，说明他之前在试图掩盖</p>
+</li>
+</ul>
+<p>可以准备一个30秒的演讲，把这三件事讲清楚</p>
+<p>最好写下来，对着读几遍，直到你能自然地说出来，而不是背出来。背出来的感觉和聊出来的感觉，面试官一听就知道</p>
+<p>你说完这30秒，面试官脑子里已经对你的项目有了一个清晰的画像</p>
+<p>接下来他的追问，基本上都会围绕你这30秒里提到的点展开。 这就已经进入你的准备范围了（还是反向钓面试官 宇宙无敌超级重要建议看下我之前稿子）</p>
+<p><strong>最怕的是30秒说了一堆，面试官抓不住重点，只好从你的技术栈里随便挑一个开始问。那才是真正的不确定性！！！</strong></p>
+<h1 id="五、一个让面试官记住你的回答模板🔥"><a href="#五、一个让面试官记住你的回答模板🔥" class="headerlink" title="五、一个让面试官记住你的回答模板🔥"></a>五、一个让面试官记住你的回答模板🔥</h1><p>试一下这个回答套路（终极无敌3W回复模版）：</p>
+<ul>
+<li>我的项目主要解决了一个什么问题，具体说一个场景（是什么what）</li>
+<li>为了解决这个问题，我对比了两种方案，最后选了A，主要是考虑到这样这样（为什么why）</li>
+<li>最终效果是这个数字，但我也发现了一个局限，就是那样那样，我接下来打算往这个方向改（怎么做how）</li>
+</ul>
+<blockquote>
+<p> 30秒，三句话，没了，全是钩子（引起面试官的兴趣）</p>
+</blockquote>
+<p>26年面试官听“我用了RAG和LangChain”已经听了一百遍了！！！</p>
+<p>但你当讲出“我的Agent在第8轮对话开始崩，我做了三次迭代才找到根因”的时候，面试官包会抬头疑惑的看你一眼</p>
+<p>那一眼，就是分水岭！</p>
+<h1 id="博文参考来源"><a href="#博文参考来源" class="headerlink" title="博文参考来源"></a>博文参考来源</h1><p><a target="_blank" rel="noopener" href="https://www.nowcoder.com/discuss/925060040203972608?sourceSSR=post">面试官听了一整天RAG和Agent，到你这儿终于不一样了_牛客网</a></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://jayashore.github.io">JayAshore</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://jayashore.github.io/posts/1788660630/">https://jayashore.github.io/posts/1788660630/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://jayashore.github.io" target="_blank">JayAshoreの博客</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E9%9D%A2%E8%AF%95/">面试</a><a class="post-meta__tags" href="/tags/%E6%89%BE%E5%B7%A5%E4%BD%9C/">找工作</a><a class="post-meta__tags" href="/tags/%E7%BB%8F%E9%AA%8C%E5%88%86%E4%BA%AB/">经验分享</a></div><div class="post-share"><div class="social-share" data-image="/img/avatar.jpg" data-sites="qq,wechat,weibo,facebook,twitter"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><div class="post-reward"><div class="reward-button"><i class="fas fa-qrcode"></i>赞助</div><div class="reward-main"><ul class="reward-all"><li class="reward-item"><a href="/img/wechat.jpg" target="_blank"><img class="post-qr-code-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/wechat.jpg" alt="微信支付"/></a><div class="post-qr-code-desc">微信支付</div></li><li class="reward-item"><a href="/img/alipay.jpg" target="_blank"><img class="post-qr-code-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/alipay.jpg" alt="支付宝"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/posts/1788615826/" title="AICoding笔试应该怎么做？"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">AICoding笔试应该怎么做？</div></div><div class="info-2"><div class="info-item-1">一网打尽大模型面试习题！</div></div></div></a><a class="pagination-related" href="/posts/1788672985/" title="AcWing 1574. 接雨水"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cdn.jsdelivr.net/gh/JayAShore/blog-images@main/images/d3bafbf1-ae80-4e40-90cb-6a9c1e9d3f19.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">AcWing 1574. 接雨水</div></div><div class="info-2"><div class="info-item-1">AcWing 1574. 接雨水解法1(暴力枚举)时间复杂度$O(n)$ 空间复杂度$O(n)$ Python代码1234567891011121314151617181920def trap(height):  if not height:    return 0  n = len(height)  lef_max = [0] * n  right_max = [0] * n    left_max[0] = height[0]  for i in range(1,n):    left_max[i] = max(left_max[i - 1], height[i])    right_max[n - 1] = height[n - 1]    for i in range(n - 2, -1, -1):    right_max[i] = max(right_max[i + 1], height[i])    water = 0  for i in range(n):    water += min(left_max[i], right_max[i]) - height[i]...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">JayAshore</div><div class="author-info-description">永远相信美好的事情即将发生！</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">14</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">25</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">远方的小伙伴，你好呀～\n累了就休息一下，慢慢来就好～愿你所求皆有回应，所行皆坦途。\n好好休息，别感冒🫵</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#AI%E5%B2%97%E9%9D%A2%E8%AF%95%E6%AD%A3%E5%9C%A8%E6%8E%89%E8%BF%9B%E2%80%9C%E5%90%8C%E8%B4%A8%E5%8C%96%E9%99%B7%E9%98%B1%E2%80%9D%EF%BC%8C%E6%80%8E%E4%B9%88%E6%89%8D%E8%83%BD%E6%9B%B4%E5%A5%BD%E7%9A%84%E6%8B%BF%E4%B8%8BAgent%E5%B2%97%E4%BD%8D%EF%BC%9F"><span class="toc-number">1.</span> <span class="toc-text">AI岗面试正在掉进“同质化陷阱”，怎么才能更好的拿下Agent岗位？</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81AI%E5%B2%97%E9%9D%A2%E8%AF%95%E6%AD%A3%E5%9C%A8%E6%8E%89%E8%BF%9B%E2%80%9C%E5%90%8C%E8%B4%A8%E5%8C%96%E9%99%B7%E9%98%B1%E2%80%9D"><span class="toc-number">2.</span> <span class="toc-text">一、AI岗面试正在掉进“同质化陷阱”</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E9%9D%A2%E8%AF%95%E5%AE%98%E7%9C%9F%E6%AD%A3%E6%83%B3%E5%90%AC%E7%9A%84%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-number">3.</span> <span class="toc-text">二、面试官真正想听的是什么？</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%90%8C%E8%B4%A8%E5%8C%96%E9%99%B7%E9%98%B1%E7%9A%84%E5%9B%9B%E4%B8%AA%E9%80%9A%E7%97%85"><span class="toc-number">4.</span> <span class="toc-text">三、同质化陷阱的四个通病</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E6%80%8E%E4%B9%88%E7%A0%B4%EF%BC%9F%E4%B8%80%E4%B8%AA%E8%83%BD%E8%AE%A9%E4%BA%BA%E8%AE%B0%E4%BD%8F%E7%9A%84%E4%BA%AE%E7%82%B9%EF%BC%8C%E5%8F%AA%E9%9C%80%E8%A6%81%E4%B8%89%E4%BB%B6%E4%BA%8B"><span class="toc-number">5.</span> <span class="toc-text">四、怎么破？一个能让人记住的亮点，只需要三件事</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E4%B8%80%E4%B8%AA%E8%AE%A9%E9%9D%A2%E8%AF%95%E5%AE%98%E8%AE%B0%E4%BD%8F%E4%BD%A0%E7%9A%84%E5%9B%9E%E7%AD%94%E6%A8%A1%E6%9D%BF%F0%9F%94%A5"><span class="toc-number">6.</span> <span class="toc-text">五、一个让面试官记住你的回答模板🔥</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8D%9A%E6%96%87%E5%8F%82%E8%80%83%E6%9D%A5%E6%BA%90"><span class="toc-number">7.</span> <span class="toc-text">博文参考来源</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/1788701143/" title="LeetCode 739.每日温度">LeetCode 739.每日温度</a><time datetime="2026-09-06T13:25:43.000Z" title="发表于 2026-09-06 21:25 21:25:43">2026-09-06 21:25</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/1788699418/" title="后端八股文">后端八股文</a><time datetime="2026-09-06T12:56:58.000Z" title="发表于 2026-09-06 20:56 20:56:58">2026-09-06 20:56</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/1788698715/" title="智旅优途">智旅优途</a><time datetime="2026-09-06T12:45:15.000Z" title="发表于 2026-09-06 20:45 20:45:15">2026-09-06 20:45</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/1788698088/" title="零基础玩转Hermes爱马仕多智能体">零基础玩转Hermes爱马仕多智能体</a><time datetime="2026-09-06T12:34:48.000Z" title="发表于 2026-09-06 20:34 20:34:48">2026-09-06 20:34</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/1788680337/" title="LeetCode 5. 最长回文子串"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cdn.jsdelivr.net/gh/JayAShore/blog-images@main/images/d3bafbf1-ae80-4e40-90cb-6a9c1e9d3f19.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="LeetCode 5. 最长回文子串"/></a><div class="content"><a class="title" href="/posts/1788680337/" title="LeetCode 5. 最长回文子串">LeetCode 5. 最长回文子串</a><time datetime="2026-09-06T07:38:57.000Z" title="发表于 2026-09-06 15:38 15:38:57">2026-09-06 15:38</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/default_top_img.jpg);"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2026 By JayAshore</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.2</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.7.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.7.0"></script><script src="/js/main.js?v=5.7.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar@0.1.16/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  const changeScriptToMath = article => {
+    article.querySelectorAll('script[type^="math/tex"]').forEach(el => {
+      const display = /mode=display/.test(el.type)
+      const node = document.createElement(display ? 'div' : 'span')
+      node.textContent = display
+        ? `$$${el.textContent}$$`
+        : `$${el.textContent}$`
+      el.parentNode.replaceChild(node, el)
+    })
+  }
+
+  const loadMathjax = () => {
+    const article = document.getElementById('article-container')
+    if (!article || article.querySelector('.hbe-container')) return
+    changeScriptToMath(article)
+
+    if (!window.MathJax) {
+      window.MathJax = {
+        loader: {
+          load: [
+            // Four font extension packages (optional)
+            //- '[tex]/bbm',
+            //- '[tex]/bboldx',
+            //- '[tex]/dsfont',
+            '[tex]/mhchem',
+            'ui/lazy'
+          ],
+          paths: {
+            'mathjax-newcm': '[mathjax]/../@mathjax/mathjax-newcm-font',
+
+            //- // Four font extension packages (optional)
+            //- 'mathjax-bbm-extension': '[mathjax]/../@mathjax/mathjax-bbm-font-extension',
+            //- 'mathjax-bboldx-extension': '[mathjax]/../@mathjax/mathjax-bboldx-font-extension',
+            //- 'mathjax-dsfont-extension': '[mathjax]/../@mathjax/mathjax-dsfont-font-extension',
+            'mathjax-mhchem-extension': '[mathjax]/../@mathjax/mathjax-mhchem-font-extension'
+          }
+        },
+        output: {
+          font: 'mathjax-newcm',
+        },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          tags: 'none',
+          packages: {
+            '[+]': [
+              'mhchem'
+            ]
+          }
+        },
+        chtml: {
+          scale: 1.1
+        },
+        options: {
+          lazyMargin: '200px',
+          enableMenu: true,
+          menuOptions: {
+            settings: {
+              enrich: false  // Turn off Braille and voice narration text automatic generation
+            }
+          },
+        }
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-mml-chtml.min.js'
+      script.id = 'MathJax-script'
+      script.async = true
+      document.head.appendChild(script)
+    } else {
+      MathJax.typesetClear()
+      MathJax.typesetPromise([ article ])
+    }
+  }
+
+  btf.addGlobalFn('encrypt', loadMathjax, 'mathjax')
+  window.pjax ? loadMathjax() : window.addEventListener('load', loadMathjax)
+})()</script><script>(() => {
+  const parseViewBox = viewBox => {
+    if (!viewBox) return null
+    const parts = viewBox.trim().split(/[\s,]+/).map(n => Number(n))
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null
+    return parts
+  }
+
+  const getSvgViewBox = svg => {
+    const attr = parseViewBox(svg.getAttribute('viewBox'))
+    if (attr) return attr
+
+    // Fallback: use bbox to build a viewBox
+    try {
+      const bbox = svg.getBBox()
+      if (bbox && bbox.width && bbox.height) return [bbox.x, bbox.y, bbox.width, bbox.height]
+    } catch (e) {
+      // getBBox may fail on some edge cases; ignore
+    }
+
+    const w = Number(svg.getAttribute('width')) || 0
+    const h = Number(svg.getAttribute('height')) || 0
+    if (w > 0 && h > 0) return [0, 0, w, h]
+    return [0, 0, 100, 100]
+  }
+
+  const setSvgViewBox = (svg, vb) => {
+    svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`)
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+  const openSvgInNewTab = ({ source, initViewBox }) => {
+    const getClonedSvg = () => {
+      if (typeof source === 'string') {
+        const template = document.createElement('template')
+        template.innerHTML = source.trim()
+        const svg = template.content.querySelector('svg')
+        return svg ? svg.cloneNode(true) : null
+      }
+      if (source && typeof source.cloneNode === 'function') {
+        return source.cloneNode(true)
+      }
+      return null
+    }
+
+    const clone = getClonedSvg()
+    if (!clone) return
+    if (initViewBox && initViewBox.length === 4) {
+      clone.setAttribute('viewBox', initViewBox.join(' '))
+    }
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    if (!clone.getAttribute('xmlns:xlink') && clone.innerHTML.includes('xlink:')) {
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    }
+    // inject background to match current theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const bg = getComputedStyle(document.body).backgroundColor || (isDark ? '#1e1e1e' : '#ffffff')
+    if (!clone.style.background) clone.style.background = bg
+
+    const serializer = new XMLSerializer()
+    const svgSource = serializer.serializeToString(clone)
+    const htmlSource = `<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html, body { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: ${bg}; }
+        svg { max-width: 100%; max-height: 100%; height: auto; width: auto; }
+      </style>
+      </head><body>${svgSource}</body></html>`
+    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
+  }
+
+  const attachMermaidViewerButton = wrap => {
+    let btn = wrap.querySelector('.mermaid-open-btn')
+    if (!btn) {
+      btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'mermaid-open-btn'
+      wrap.appendChild(btn)
+    }
+
+    btn.innerHTML = '<i class="fa fa-search fa-fw" aria-hidden="true"></i>'
+
+    if (!btn.__mermaidViewerBound) {
+      btn.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const svg = wrap.__mermaidOriginalSvg || wrap.querySelector('svg')
+        if (!svg) return
+        const initViewBox = wrap.__mermaidInitViewBox
+        openSvgInNewTab({ source: svg, initViewBox })
+      })
+      btn.__mermaidViewerBound = true
+    }
+  }
+
+  // Zoom around a point (px, py) in the SVG viewport (in viewBox coordinates)
+  const zoomAtPoint = (vb, factor, px, py) => {
+    const w = vb[2] * factor
+    const h = vb[3] * factor
+    const nx = px - (px - vb[0]) * factor
+    const ny = py - (py - vb[1]) * factor
+    return [nx, ny, w, h]
+  }
+
+  const initMermaidGestures = wrap => {
+    // Clean up previous event listeners and pending frames
+    if (wrap.__mermaidAbortController) {
+      wrap.__mermaidAbortController.abort()
+      if (wrap.__mermaidRafId) cancelAnimationFrame(wrap.__mermaidRafId)
+    }
+    const ac = new AbortController()
+    wrap.__mermaidAbortController = ac
+    const svg = wrap.querySelector('svg')
+    if (!svg) return
+
+    // Ensure viewBox exists so gestures always work
+    const initVb = getSvgViewBox(svg)
+    wrap.__mermaidInitViewBox = initVb
+    wrap.__mermaidCurViewBox = initVb.slice()
+    setSvgViewBox(svg, initVb)
+    // Disable default gestures to prevent scroll chaining and pinch-zoom penetration in Chrome
+    svg.style.touchAction = 'none'
+
+    // Cache BoundingClientRect, throttled on scroll to reduce reflow
+    let cachedRect = svg.getBoundingClientRect()
+    let rectDirty = false
+    const markRectDirty = () => { rectDirty = true }
+    window.addEventListener('resize', markRectDirty, { signal: ac.signal })
+    window.addEventListener('scroll', markRectDirty, { signal: ac.signal, capture: true })
+    const getRect = () => {
+      if (rectDirty) {
+        cachedRect = svg.getBoundingClientRect()
+        rectDirty = false
+      }
+      return cachedRect
+    }
+
+    // Precompute clamp bounds from initial viewBox
+    const minW = initVb[2] * 0.1
+    const maxW = initVb[2] * 10
+    const minH = initVb[3] * 0.1
+    const maxH = initVb[3] * 10
+    const clampVb = vb => {
+      const out = vb.slice()
+      out[2] = clamp(out[2], minW, maxW)
+      out[3] = clamp(out[3], minH, maxH)
+      return out
+    }
+
+    // Throttle DOM updates using requestAnimationFrame
+    let pendingVb = null
+    let rafId = null
+    const applyVb = () => {
+      if (pendingVb) {
+        wrap.__mermaidCurViewBox = pendingVb
+        setSvgViewBox(svg, pendingVb)
+        pendingVb = null
+      }
+      rafId = null
+      wrap.__mermaidRafId = null
+    }
+    const setCurVb = vb => {
+      pendingVb = clampVb(vb)
+      if (!rafId) {
+        rafId = requestAnimationFrame(applyVb)
+        wrap.__mermaidRafId = rafId
+      }
+    }
+
+    const state = {
+      pointers: new Map(),
+      startVb: null,
+      startDist: 0,
+      lastPointerX: 0,
+      lastPointerY: 0
+    }
+
+    const onPointerDown = e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      svg.setPointerCapture(e.pointerId)
+      const curVb = wrap.__mermaidCurViewBox
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      if (state.pointers.size === 1) {
+        state.startVb = curVb.slice()
+        state.lastPointerX = e.clientX
+        state.lastPointerY = e.clientY
+      } else if (state.pointers.size === 2) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        state.startDist = Math.hypot(dx, dy)
+        state.startVb = curVb.slice()
+      }
+    }
+
+    const onPointerMove = e => {
+      if (!state.pointers.has(e.pointerId)) return
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      const curVb = wrap.__mermaidCurViewBox
+      const rect = getRect()
+      if (state.pointers.size === 1 && state.startVb) {
+        const p = state.pointers.values().next().value
+        const dxClient = p.x - state.lastPointerX
+        const dyClient = p.y - state.lastPointerY
+        state.lastPointerX = p.x
+        state.lastPointerY = p.y
+        const dx = dxClient * (curVb[2] / rect.width)
+        const dy = dyClient * (curVb[3] / rect.height)
+        setCurVb([curVb[0] - dx, curVb[1] - dy, curVb[2], curVb[3]])
+        return
+      }
+      if (state.pointers.size === 2 && state.startVb && state.startDist > 0) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        const dist = Math.hypot(dx, dy)
+        if (!dist) return
+        const factor = state.startDist / dist
+        const cx = (pts[0].x + pts[1].x) / 2
+        const cy = (pts[0].y + pts[1].y) / 2
+        const px = curVb[0] + (cx - rect.left) * (curVb[2] / rect.width)
+        const py = curVb[1] + (cy - rect.top) * (curVb[3] / rect.height)
+        setCurVb(zoomAtPoint(state.startVb, factor, px, py))
+      }
+    }
+
+    const onPointerUpOrCancel = e => {
+      // Release PointerCapture to avoid event capture anomalies
+      if (svg.hasPointerCapture && svg.hasPointerCapture(e.pointerId)) {
+        svg.releasePointerCapture(e.pointerId)
+      }
+      state.pointers.delete(e.pointerId)
+      if (state.pointers.size === 0) {
+        state.startVb = null
+        state.startDist = 0
+      } else if (state.pointers.size === 1) {
+        const p = state.pointers.values().next().value
+        state.lastPointerX = p.x
+        state.lastPointerY = p.y
+      }
+    }
+
+    const onWheel = e => {
+      // Prevent event bubbling from triggering external scroll
+      e.preventDefault()
+      e.stopPropagation()
+      // Normalize deltaY across deltaMode (Chrome uses pixels, Safari uses lines)
+      let delta = e.deltaY
+      if (e.deltaMode === 1) delta *= 16
+      else if (e.deltaMode === 2) delta *= 400
+
+      // Continuous zoom factor: smoother than fixed 1.1/0.9 steps
+      const zoomFactor = Math.pow(1.001, delta)
+
+      const curVb = wrap.__mermaidCurViewBox
+      const rect = getRect()
+      const px = curVb[0] + (e.clientX - rect.left) * (curVb[2] / rect.width)
+      const py = curVb[1] + (e.clientY - rect.top) * (curVb[3] / rect.height)
+      setCurVb(zoomAtPoint(curVb, zoomFactor, px, py))
+    }
+
+    const onDblClick = () => {
+      const init = wrap.__mermaidInitViewBox
+      if (init) setCurVb(init)
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown, { signal: ac.signal })
+    svg.addEventListener('pointermove', onPointerMove, { signal: ac.signal })
+    svg.addEventListener('pointerup', onPointerUpOrCancel, { signal: ac.signal })
+    svg.addEventListener('pointercancel', onPointerUpOrCancel, { signal: ac.signal })
+    svg.addEventListener('wheel', onWheel, { passive: false, signal: ac.signal })
+    svg.addEventListener('dblclick', onDblClick, { signal: ac.signal })
+  }
+
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      // Clean up event listeners before removing old SVG
+      if (item.__mermaidAbortController) {
+        item.__mermaidAbortController.abort()
+      }
+      const oldSvg = item.querySelector('svg')
+      if (oldSvg) oldSvg.remove()
+      let config = {}
+      try {
+        config = mermaidSrc.dataset.config ? JSON.parse(mermaidSrc.dataset.config) : {}
+      } catch (e) {
+        console.warn('[mermaid] failed to parse dataset.config:', e)
+      }
+      if (!config.theme) {
+        config.theme = theme
+      }
+      const mermaidThemeConfig = `%%{init: ${JSON.stringify(config)}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+        if (true) initMermaidGestures(item)
+        item.__mermaidOriginalSvg = svg
+        if (true) attachMermaidViewerButton(item)
+      }
+
+      const handleError = err => {
+        console.error(`[mermaid] render failed for block #${index}:`, err)
+        const errorEl = document.createElement('div')
+        errorEl.className = 'mermaid-error'
+        errorEl.textContent = `Mermaid render error: ${err.message || err}`
+        mermaidSrc.insertAdjacentElement('afterend', errorEl)
+      }
+
+      try {
+        const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+        // mermaid v9 and v10 compatibility
+        if (typeof renderFn === 'string') {
+          renderMermaid(renderFn)
+        } else {
+          renderFn.then(({ svg }) => renderMermaid(svg)).catch(handleError)
+        }
+      } catch (err) {
+        handleError(err)
+      }
+    })
+  }
+
+  const codeToMermaid = $article => {
+    const codeMermaidEle = $article.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    const $article = document.getElementById('article-container')
+    if (!$article) return
+
+    if (true) codeToMermaid($article)
+    const $mermaid = $article.querySelectorAll('.mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/activate-power-mode.min.js"></script><script>POWERMODE.colorful = true;
+POWERMODE.shake = false;
+POWERMODE.mobile = false;
+document.body.addEventListener('input', POWERMODE);
+</script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js" defer="defer"></script><script>document.addEventListener('DOMContentLoaded', () => {
+  const pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"]):not([data-fancybox])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => {
+      try {
+        fn()
+      } catch (err) {
+        console.debug('Pjax callback failed:', err)
+      }
+    })
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      if (!item.parentNode) return
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || ''
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    const responseURL = e.request && e.request.responseURL
+    if (e.request && e.request.status === 404) {
+      true
+        ? pjax.loadUrl('/404.html')
+        : responseURL && (window.location.href = responseURL)
+    } else if (responseURL) {
+      window.location.href = responseURL
+    }
+  })
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

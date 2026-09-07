@@ -1,0 +1,1245 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Agent面经宝典 | JayAshoreの博客</title><meta name="author" content="JayAshore"><meta name="copyright" content="JayAshore"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="百度 实践过程中，一个问题大概要多少loop  业务场景差异很大：简单日志排查、明确指令一般2‑3 轮 loop；问题模糊、需要多次查日志 + 核对接口、多步骤定位的复杂故障，普遍4‑8 轮；极少数边界疑难问题会冲到 8 轮以上。线上生产环境我们一般不会放任无限循环。   怎么评判这个loop次数是符合预期的呢？loop上限是依据什么取的  查询日志接口是现有的是吧，怎么保证不会一次拉取过多的日志">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Agent面经宝典">
+<meta property="og:url" content="https://jayashore.github.io/posts/1788612226/index.html">
+<meta property="og:site_name" content="JayAshoreの博客">
+<meta property="og:description" content="百度 实践过程中，一个问题大概要多少loop  业务场景差异很大：简单日志排查、明确指令一般2‑3 轮 loop；问题模糊、需要多次查日志 + 核对接口、多步骤定位的复杂故障，普遍4‑8 轮；极少数边界疑难问题会冲到 8 轮以上。线上生产环境我们一般不会放任无限循环。   怎么评判这个loop次数是符合预期的呢？loop上限是依据什么取的  查询日志接口是现有的是吧，怎么保证不会一次拉取过多的日志">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/JayAShore/blog-images@main/images/Agent%E5%85%AB%E8%82%A1%E6%96%87%E9%9D%A2%E7%BB%8F%EF%BC%9AAI%E6%B1%82%E8%81%8C%E6%8C%87%E5%8D%97.png">
+<meta property="article:published_time" content="2026-09-05T12:43:46.000Z">
+<meta property="article:modified_time" content="2026-09-05T12:43:46.000Z">
+<meta property="article:author" content="JayAshore">
+<meta property="article:tag" content="Agent">
+<meta property="article:tag" content="大模型">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/JayAShore/blog-images@main/images/Agent%E5%85%AB%E8%82%A1%E6%96%87%E9%9D%A2%E7%BB%8F%EF%BC%9AAI%E6%B1%82%E8%81%8C%E6%8C%87%E5%8D%97.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Agent面经宝典",
+  "url": "https://jayashore.github.io/posts/1788612226/",
+  "image": "https://cdn.jsdelivr.net/gh/JayAShore/blog-images@main/images/Agent%E5%85%AB%E8%82%A1%E6%96%87%E9%9D%A2%E7%BB%8F%EF%BC%9AAI%E6%B1%82%E8%81%8C%E6%8C%87%E5%8D%97.png",
+  "datePublished": "2026-09-05T12:43:46.000Z",
+  "dateModified": "2026-09-05T12:43:46.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "JayAshore",
+      "url": "https://jayashore.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="https://jayashore.github.io/posts/1788612226/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.7.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        const data = { value }
+
+        if (ttl != null) {
+          data.expiry = Date.now() + ttl * 86400000
+        }
+
+        localStorage.setItem(key, JSON.stringify(data))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return
+
+        try {
+          const data = JSON.parse(itemStr)
+
+          if (data.expiry && Date.now() > data.expiry) {
+            localStorage.removeItem(key)
+            return
+          }
+
+          return data.value
+        } catch {
+          localStorage.removeItem(key)
+        }
+      }
+    }
+
+    const scriptCache = new Map()
+    const cssCache = new Map()
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => {
+        if (scriptCache.has(url)) {
+          return scriptCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+
+          script.src = url
+          script.async = true
+
+          for (const key in attr) {
+            script.setAttribute(key, attr[key])
+          }
+
+          script.onload = resolve
+          script.onerror = reject
+
+          document.head.appendChild(script)
+        })
+
+        scriptCache.set(url, promise)
+
+        return promise
+      },
+      getCSS: (url, id) => {
+        if (cssCache.has(url)) {
+          return cssCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const link = document.createElement('link')
+
+          link.rel = 'stylesheet'
+          link.href = url
+
+          if (id) {
+            link.id = id
+          }
+
+          link.onload = resolve
+          link.onerror = reject
+
+          document.head.appendChild(link)
+        })
+
+        cssCache.set(url, promise)
+
+        return promise
+      },
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      const activateDarkMode = () => {
+        document.documentElement.dataset.theme = 'dark'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.dataset.theme = 'light'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"limitCount":50,"languages":{"author":"作者: JayAshore","link":"链接: ","source":"来源: JayAshoreの博客","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。"}},
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"已切换为繁体中文","cht_to_chs":"已切换为简体中文","day_to_night":"已切换为深色模式","night_to_day":"已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"bottom-left"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Agent面经宝典',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">14</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">25</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-book"></i><span> 文章</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li><li><a class="site-page child" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/charts/"><i class="fa-fw fas fa-chart-column"></i><span> 统计</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-earth-asia"></i><span> 社交</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fas fa-images"></i><span> 相册</span></a></li><li><a class="site-page child" href="/message/"><i class="fa-fw fas fa-comments"></i><span> 留言</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/shuoshuo/"><i class="fa-fw fas fa-comment-dots"></i><span> 说说</span></a></div><div class="menus_item"><a class="site-page" href="/tools/"><i class="fa-fw fas fa-toolbox"></i><span> 工具</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://cdn.jsdelivr.net/gh/JayAShore/blog-images@main/images/Agent%E5%85%AB%E8%82%A1%E6%96%87%E9%9D%A2%E7%BB%8F%EF%BC%9AAI%E6%B1%82%E8%81%8C%E6%8C%87%E5%8D%97.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">JayAshoreの博客</span></a><a class="nav-page-title" href="/"><span class="site-name">Agent面经宝典</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-book"></i><span> 文章</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li><li><a class="site-page child" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/charts/"><i class="fa-fw fas fa-chart-column"></i><span> 统计</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-earth-asia"></i><span> 社交</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fas fa-images"></i><span> 相册</span></a></li><li><a class="site-page child" href="/message/"><i class="fa-fw fas fa-comments"></i><span> 留言</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/shuoshuo/"><i class="fa-fw fas fa-comment-dots"></i><span> 说说</span></a></div><div class="menus_item"><a class="site-page" href="/tools/"><i class="fa-fw fas fa-toolbox"></i><span> 工具</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Agent面经宝典</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-09-05T12:43:46.000Z" title="发表于 2026-09-05 20:43 20:43:46">2026-09-05 20:43</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-09-05T12:43:46.000Z" title="更新于 2026-09-05 20:43 20:43:46">2026-09-05 20:43</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%85%AB%E8%82%A1%E6%96%87/">八股文</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">13.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>45分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="百度"><a href="#百度" class="headerlink" title="百度"></a>百度</h1><ul>
+<li><p>实践过程中，一个问题大概要多少loop</p>
+<blockquote>
+<p>业务场景差异很大：简单日志排查、明确指令一般2‑3 轮 loop；问题模糊、需要多次查日志 + 核对接口、多步骤定位的复杂故障，普遍4‑8 轮；极少数边界疑难问题会冲到 8 轮以上。线上生产环境我们一般不会放任无限循环。</p>
+</blockquote>
+</li>
+<li><p>怎么评判这个loop次数是符合预期的呢？loop上限是依据什么取的</p>
+</li>
+<li><p>查询日志接口是现有的是吧，怎么保证不会一次拉取过多的日志上下文爆掉呢</p>
+</li>
+<li><p>你们怎么去评估这个Agent的效果的呢？以及后续怎么优化的呢？</p>
+</li>
+<li><p>这几个点都是一些不同维度的指标，有些指标变好，有些指标变差，这个时候怎么判断优化的结果怎么样呢？</p>
+<blockquote>
+<ol>
+<li>先确定<strong>业务核心目标</strong>：比如首要目标是故障解决率，其次才是减少轮次、降低成本；2.使用<strong>加权综合打分</strong>，或者设定约束条件：主指标不能下跌，在主指标持平&#x2F;提升的前提下优化次要指标；3.AB对照实验，统计显著性，不能看单个样本；4.分场景看收益：优化对高频核心问题收益明显，即使少量边缘case变差，整体版本依然可以接受，最后权衡成本与收益做版本取舍。</li>
+</ol>
+</blockquote>
+</li>
+<li><p>loop次数其实和读取的日志所涉及的量有关系，那么为什么还要把loop次数作为一个测试的指标呢？</p>
+</li>
+<li><p>IM项目中的AI助手和知识检索是怎么做的呢？是你自己做的吗？</p>
+</li>
+<li><p>API调用大模型的时候是分场景调用还是什么形式</p>
+<blockquote>
+<p>是的，<strong>按场景分流调度</strong>：简单问答、摘要、工具决策使用性价比更高的轻量模型；复杂推理、长文本分析、故障根因总结使用更强的大基座；同时做限流、缓存、路由策略，控制成本。</p>
+</blockquote>
+</li>
+<li><p>我看你们这个有一个向量检索，为什么对不同的文档进行分别进行切割和向量化</p>
+<blockquote>
+<ol>
+<li>不同类型文档格式、行文结构完全不一样：接口文档、运维手册、变更记录、FAQ适合不同切片策略；</li>
+</ol>
+</blockquote>
+</li>
+</ul>
+<ol start="2">
+<li>统一切割粒度会出现两种问题：短文档切得太碎丢失语义，长文档切片过大上下文冗余；</li>
+<li>分文档独立处理可以定制<strong>切片大小、重叠步长、清洗规则</strong>，提升检索精准度；后续也可以单独更新某一份文档，不用全量重刷整个知识库。</li>
+</ol>
+<ul>
+<li><p>用的什么embedding模型</p>
+<blockquote>
+<p>我们优先使用开源中文embedding基座（例如bge系列）；参数量大概百M级别。<br>内部做过对比实验：bge、m3e等多款中文向量模型，在业务自建评测集上召回精度、排序效果、推理耗时综合对比，选出当前最优版本；后续也会持续评估更新的embedding模型迭代替换。</p>
+</blockquote>
+</li>
+<li><p>embedding模型是多大的模型，有没有尝试过其他的embedding模型呢？</p>
+</li>
+<li><p>RRF融合排序是怎么做的？什么原理呢</p>
+<blockquote>
+<p>RRF（Reciprocal Rank Fusion，倒数排名融合），是一种无需打分归一化的多路检索融合算法。</p>
+</blockquote>
+</li>
+</ul>
+<ol>
+<li>分别拿到向量检索列表、ES关键词检索列表，各自自带排名；</li>
+<li>对每一条文档计算得分：$score&#x3D;\sum \frac{1}{k+rank}$，k是平滑常量（一般取60）；rank代表文档在各自结果里的位次；</li>
+<li>将所有文档按照融合后的总分重新排序。<br>优点：不需要对齐两路检索的分数区间，兼容向量相似度和BM25两种完全不同的打分体系，兼顾语义召回和关键词精准匹配。</li>
+</ol>
+<ul>
+<li><p>所以这个RRF是使用的向量检索的结果和ES的结果来进行融合的吧？</p>
+</li>
+<li><p>为什么还要再做一次rerank</p>
+</li>
+<li><p>怎么优化这个rerank的结果呢？怎么确保现在rerank的效果是好的</p>
+</li>
+<li><p>人工标注的规模有多大</p>
+</li>
+<li><p>这个RAG评测平台的目标是什么呢？</p>
+</li>
+<li><p>为什么这个平台可以解决人工标注的问题</p>
+</li>
+<li><p>算法：输入一个数组，一个行数m，然后按照倒N的形状来输出</p>
+</li>
+<li><p>假如这个问题改成先从上到下，再从左往右这样排列，怎么改呢？</p>
+<blockquote>
+</blockquote>
+</li>
+<li><p>你这边的base地有强要求吗？</p>
+<blockquote>
+<p>可以接受目标 base 城市；如果项目阶段性需要短期出差支持也可以配合，整体稳定性优先。</p>
+</blockquote>
+</li>
+<li><p>讲一下你的职业规划吧，你希望三年内做到什么地步</p>
+<blockquote>
+<p>第一年：吃透 Agent、RAG 整套工程链路，独立负责模块落地，能够独立完成方案设计、评测迭代与问题排查；<br>第二年：主导完整业务 AI 助手项目，负责技术方案选型、实验评估、bad‑case 闭环优化，沉淀可复用的内部工具链与评测体系；<br>第三年：成长为该方向的技术骨干，能够牵头复杂 AI 工程化方案，带领小模块迭代，在大模型应用落地、自动化评测、Agent 可靠性优化上产出可复用的技术沉淀，支撑更多业务场景落地。</p>
+</blockquote>
+</li>
+</ul>
+<p><strong>反问环节</strong></p>
+<ul>
+<li>在AI的浪潮下，对开发岗位来说如何保持一个竞争力？现在AI的模型下，在实际生产过程中，比较困难点的在哪里呢？</li>
+<li>部门具体的业务都是什么。</li>
+<li>不同技术栈在考察不同背景的学生的时候，面试的时候会更看重哪些方面？</li>
+</ul>
+<h1 id="快手"><a href="#快手" class="headerlink" title="快手"></a>快手</h1><ul>
+<li>你在项目中使用过哪些 AI 编码辅助工具（Cursor、Codex）？如何协作保证代码质量？</li>
+<li>你设计过工具调用结果缓存吗？如何决定哪些结果可缓存，缓存多久？</li>
+<li>在多轮对话中，用户长期偏好（语言风格、地点）如何存储？用什么数据结构？</li>
+<li>如何确保 Agent 不泄露敏感信息？从输入过滤和输出脱敏两方面说明。</li>
+</ul>
+<h1 id="字节"><a href="#字节" class="headerlink" title="字节"></a>字节</h1><ul>
+<li>自我介绍</li>
+<li>请你详细介绍你的AI项目；</li>
+<li>你的项目中说到了面试评分，那么简历评分的内容是如何进行结构化输出的？从哪几个维度进行评分？（项目有关）</li>
+<li>项目中的RAG知识用到了哪些？离线上传和在线问答环节如何进行？（项目有关）</li>
+<li>你如何理解Agent中Harness的概念？</li>
+<li>你的Agent里面运行了一个长程的任务，它假设平时只允许需要运行5分钟就能结束。然后你新运行了一次，它运行了15-20分钟，也就是说跟之前比有明显的延迟，然后你会怎么分析这个延迟是什么导致的？如何解决上述这个问题？</li>
+<li>Agent在执行过程中，肯定不可避免地要去调用一些工具，这些工具都有固定地入参，需要模型结合上下文去提供，+ 然后在这个过程中，如何去保障工具调用的可靠性？</li>
+<li>随着提问轮次的增加，上下文窗口会越来越大，该如何进行解决？</li>
+<li>压缩或者摘要肯定会丢失信息，如何使得这个信息丢失最小化？</li>
+<li>给定一个数n，如23121；给定一组数字A如{2，4，9}，求由A中元素组成的小于n的最大数，如小于23121的最大数是22999。</li>
+</ul>
+<h1 id="基础概念与架构模式"><a href="#基础概念与架构模式" class="headerlink" title="基础概念与架构模式"></a>基础概念与架构模式</h1><ul>
+<li><p>用大白话说清楚什么是 Agent，它和传统对话系统、Siri 类助手的边界在哪？（字节跳动）</p>
+<blockquote>
+<p>普通 Siri &#x2F; 聊天机器人：你给一句明确指令，它做一件固定的事，做完就停。不会自己拆任务、不会主动查资料、遇到问题不会自己改方案。<br>Agent 是会自己干活的 AI 员工：听懂你的大目标之后，自己拆分步骤、自己判断要不要调用工具、中间错了自己调整，直到把整件完整事情做完，而不是只回答一句话。<br>边界：Siri：一问一答，单次动作，没有自主闭环；普通对话机器人：流程写死，人必须一步步引导；Agent：目标驱动，自主规划、自主纠错、多步闭环完成复杂任务。</p>
+</blockquote>
+</li>
+<li><p>AI Agent 是什么？为什么要用 Agent 而不是直接调大模型？（字节跳动 &#x2F; 快手 &#x2F; 腾讯）</p>
+<blockquote>
+<p>AI Agent（智能体）是一套「能自主规划、使用工具、迭代执行、完成完整目标」的智能系统，大模型只是它的大脑。<br>一个标准 Agent 一般由 5 个部分组成：<br>1、大模型 LLM（思考大脑）：负责理解目标、推理、写计划<br>2、记忆 Memory：短期对话上下文 + 长期知识库 &#x2F; 历史任务<br>3、规划 Planning：把大目标拆成一步步子任务（反思、纠错）<br>4、工具调用 Tool Use：联网查数据、调用 API、操作文件、执行代码<br>5、行动 Action：循环执行 → 观察结果 → 判断是否完成（闭环）<br>简单对比：<br>裸大模型：你问一句，它输出一段文字；被动应答，一次性输出，不会自己干活<br>AI Agent：你给一个最终目标，它自己想步骤、找工具、试错，直到把整件事做完</p>
+</blockquote>
+</li>
+<li><p>Agent 和 Workflow 有什么关系，分别适合什么场景？判断依据是什么？（字节跳动 &#x2F; 百度 &#x2F; 腾讯广告 &#x2F; 得物）</p>
+<blockquote>
+<p> Workflow（工作流）：人提前把每一步顺序写死，固定分支，逻辑确定。比如：审批流、固定报表导出。优点稳定可控、确定性高；缺点不能应对意外情况。<br>Agent：步骤不写死，由大模型实时动态决定下一步做什么，分支灵活，能处理不确定、多变的问题。</p>
+</blockquote>
+</li>
+<li><p>常见的 Agent 架构模式有哪些？（阿里巴巴）</p>
+<blockquote>
+<p>ReAct（推理 + 行动）：思考→调用工具→拿到结果再思考，循环闭环；<br>Plan‑Execute‑Replan（规划‑执行‑重规划）：先生成完整方案，分步执行，发现偏差重新改计划；<br>Reflection &#x2F; Self‑Critique 自省式 Agent：执行完成之后自我复盘评估结果好不好；<br>Multi‑Agent 多智能体：拆分角色（规划 Agent、工具 Agent、校验 Agent）分工协作；<br>Tool‑call Agent（基础工具调用 Agent）：轻量单轮工具调用；<br>Cognitive Architecture（完整认知架构）：短期记忆、长期记忆、反思、规划全套模块（AutoGPT 这类）。</p>
+</blockquote>
+</li>
+<li><p>ReAct 是什么？工作流程和优缺点分别是什么？（携程 &#x2F; 腾讯 &#x2F; 快手）</p>
+<blockquote>
+<p>流程循环，hought(思考我需要做什么) → Action(调用工具) → Observation(拿到返回结果)<br>优点：实现简单，实时根据最新结果调整下一步动作，适合动态、不可预测的场景；<br>缺点：短视，缺少全局视角，容易陷入局部循环，走弯路，长任务容易跑偏。</p>
+</blockquote>
+</li>
+<li><p>ReAct 和 Plan-Execute-Replan 的区别是什么？分别适用于哪些场景？（美团 &#x2F; 小红书）</p>
+<blockquote>
+<p>ReAct：边走边想，每一步才决定下一步，没有完整前置方案。适合探索型、未知问题（网页搜索排查问题）；<br>Plan‑Execute‑Replan：先做完整全局方案，再一步步执行，中途发现计划走不通再重新规划。适合目标明确、步骤多、需要整体把控的长任务（写一份完整市场调研报告）。</p>
+</blockquote>
+</li>
+<li><p>Plan-Execute-Replan 为什么需要一个监管 Agent？</p>
+<blockquote>
+<p>执行过程中会出现计划失效、结果不符合预期、执行出错、偏离业务约束。<br>监管 Agent 独立负责校验每一步结果、判断当前计划是否失效、触发重新规划、拦截错误操作，防止执行 Agent 盲目继续执行错误步骤，保证最终结果符合业务目标。</p>
+</blockquote>
+</li>
+<li><p>Agent 项目通常如何设计整体架构、框架和部署流程？（小红书）</p>
+<blockquote>
+<p>1、业务层：用户输入、会话管理；<br>2、Agent 核心层：记忆模块（短期对话记忆 &#x2F; 长期向量记忆）、规划模块、反思校验模块、工具路由；<br>3、工具层：函数 &#x2F; 接口 &#x2F; 数据库调用；<br>4、模型层：底层 LLM；<br>5、观测运维层：日志、Trace、评估、人工干预入口；</p>
+</blockquote>
+</li>
+<li><p>Agent和大模型在业务中有什么区别？（百度）</p>
+<blockquote>
+<p>大模型：大脑，只会思考和输出文字，没有动手能力，没有流程；<br>Agent &#x3D; 大脑 (LLM) + 手脚 (工具) + 记忆 + 做事流程 + 纠错机制；<br>业务上：大模型负责理解与推理；Agent 负责完整业务流程自动化执行。</p>
+</blockquote>
+</li>
+<li><p>Agent 项目与传统后端项目的架构差异体现在哪？</p>
+<blockquote>
+<p>1、传统后端：逻辑硬编码，确定输入得到确定输出；<br>2、Agent 系统：非确定性系统，输出依赖 LLM 随机推理；<br>3、新增模块：记忆存储、规划、自省评估、工具调度；<br>4、运维方式变化：不能只监控接口报错，还要做效果评估、幻觉监控、人工兜底；<br>5、迭代方式：传统改代码；Agent 迭代 Prompt、工具集、评估数据集。</p>
+</blockquote>
+</li>
+<li><p>搭一个大模型应用，如何在「单次提示词 &#x2F; Workflow &#x2F; Agent」三种方案之间选型？</p>
+<blockquote>
+<p>1、单次 Prompt：简单一次性文本生成、翻译、摘要；步骤为 0，不需要外部工具；<br>2、Workflow：步骤固定、分支可控、业务规则确定，追求稳定可控；<br>3、Agent：目标复杂、步骤不确定、需要动态决策、中途校验重试。<br>优先级选型原则：能 Prompt 就不用 Workflow，能 Workflow 就不上 Agent，Agent 成本最高、不可控性最强。</p>
+</blockquote>
+</li>
+<li><p>什么时候应该固化成垂直领域 Agent，什么时候要保系统泛化性？</p>
+<blockquote>
+<p>1、垂直固化 Agent：业务场景固定、工具集合固定、有明确业务规则（电商客服 Agent、财务对账 Agent），收敛能力，减少幻觉，稳定性优先；<br>2、泛化通用 Agent：面向开放式需求，工具集庞大，用户任务不可预知，追求灵活能力。</p>
+</blockquote>
+</li>
+<li><p>最小可用 Agent 的核心模块是不是一个 ReAct Loop？除了工具调用还必须实现什么？</p>
+<blockquote>
+<p>最小可用 Agent 核心确实是 ReAct 循环；除此之外必备：<br>1、会话短期记忆；<br>2、停止判断逻辑（什么时候任务完成）；<br>3、简单结果校验；<br>4、异常捕获、重试机制；<br>5、没有记忆的单次工具调用不算完整 Agent。</p>
+</blockquote>
+</li>
+<li><p>企业落地 Agent 系统最大的瓶颈是什么？用 Agent 有哪些弊端？</p>
+<blockquote>
+<p>瓶颈:1、结果不可控、幻觉风险；2、工具可靠性问题（接口不稳定）；3、效果难以自动化评估；4、安全风险：自主调用高危业务接口；5、成本高、延迟高；<br>弊端：1、执行路径不可预测，调试困难；2、长任务容易发散，执行超时；3、对底层模型能力依赖极高；4、安全管控成本远高于传统系统。</p>
+</blockquote>
+</li>
+<li><p>Agent与Siri等传统智能助手的核心差异是什么？（字节跳动）</p>
+<blockquote>
+<p>Siri：被动单次执行，用户必须给出精准简短指令，完成单一动作；<br>Agent：目标驱动自主多步闭环。你给一个模糊大目标，它自己拆解执行、纠错，独立完成一件完整复杂工作。</p>
+</blockquote>
+</li>
+<li><p>复杂场景既需要 Plan-Execute 的全局规划、又需要 ReAct 的实时反馈，架构上怎么兼顾？</p>
+<blockquote>
+<p>采用混合架构，1. 规划层（PER）先生成全局粗粒度方案；2. 拆分成一个个子任务；3. 每个子任务内部用 ReAct 循环执行，实时根据工具返回动态决策； 4. 监管模块校验子任务结果，失败触发顶层重新规划。也就是：顶层全局规划，子步骤局部 ReAct 灵活执行。</p>
+</blockquote>
+</li>
+<li><p>请用通俗的话说明什么是 Agent，让非技术面试官也能听懂。（字节跳动）</p>
+<blockquote>
+<p>普通 AI 只会回答你问的一句话；Agent 相当于给 AI 配了双手、记事本和判断力。你只告诉它最终想要什么，它自己一步步查资料、操作系统，遇到问题自己调整办法，从头到尾把整件事做完交给你。</p>
+</blockquote>
+</li>
+<li><p>AI Agent 如何选择底层大模型？多 Agent 场景下主 Agent 和子 Agent 该用一样大小的模型吗？（阿里巴巴 &#x2F; 滴滴）</p>
+<blockquote>
+<p>主 Agent（规划、决策、复杂推理）：使用能力更强的大参数量模型，逻辑理解、反思纠错要求高；<br>子 Agent &#x2F; 工具调用 Agent：任务简单，只是格式化参数、简单判断，可以使用轻量低成本小模型；<br>原则：重决策用大模型，简单动作调度用小模型节省成本。</p>
+</blockquote>
+</li>
+<li><p>AI Agent 有哪些常见的模型或类型划分？（腾讯）</p>
+<blockquote>
+<p>按执行范式划分：ReAct Agent、Plan‑Execute‑Replan Agent、Self‑Reflection Agent；<br>按角色数量：单 Agent &#x2F; Multi‑Agent 多智能体；<br>按领域：通用 Agent &#x2F; 垂直业务 Agent；<br>按能力强弱：轻量工具调用 Agent、完整认知 Agent（记忆 + 规划 + 反思）；<br>按部署形态：代码解释器 Agent、工作流增强 Agent。</p>
+</blockquote>
+</li>
+</ul>
+<h1 id="Agent-Harness-与运行时工程"><a href="#Agent-Harness-与运行时工程" class="headerlink" title="Agent Harness 与运行时工程"></a>Agent Harness 与运行时工程</h1><p>&#96;这一节是 2026 年才真正热起来的方向，很多概念半年前还不存在，考察的是理解力而不是背诵！！！</p>
+<ul>
+<li><p>Prompt Engineering、Context Engineering、Harness Engineering 三者有什么区别？（钉钉）</p>
+<blockquote>
+<p>1、Prompt Engineering 提示词工程：只优化文本指令、Few‑shot、角色设定，改输入文本，不改动执行流程，是最上层的文本调优。<br>2、Context Engineering 上下文工程：管理上下文窗口、RAG 检索过滤、摘要压缩、记忆分片、去重，控制传给大模型的信息质量与长度，解决上下文溢出、信息噪声问题。<br>3、Harness Engineering 智能体基座工程：构建整套运行时框架，负责状态管理、工具调度、循环迭代、失败重试、快照持久化、多子 Agent 编排，管控完整执行生命周期，是 Agent 的底层运行骨架。<br>Prompt Engineering → 控制模型怎么思考<br>Context Engineering → 控制模型看到什么信息<br>Harness Engineering → 控制整个 Agent 怎么跑、失败怎么处理、状态怎么保存</p>
+</blockquote>
+</li>
+<li><p>Agent Engineering 和 Harness 在软件开发中分别指什么？</p>
+<blockquote>
+<p>Agent Engineering（Agent 工程）：面向业务，定义 Agent 能力、工具集、业务逻辑、任务规划，做 Agent 本身的业务开发。<br>Harness：底层运行时 &#x2F; 执行容器，提供统一调度、状态保存、错误降级、日志追踪、多轮循环的基础设施，是承载 Agent 运行的平台。<br>Agent Engineering &#x3D; 完整做 Agent 这件事<br>Harness &#x3D; Agent 运行和测试的底层基础设施</p>
+</blockquote>
+</li>
+<li><p>Harness 做的事情 LangChain 等框架其实一直在做，为什么 harness 这个概念现在突然火了？区别是什么？（字节跳动大模型算法三面）</p>
+<blockquote>
+<p>LangChain 早期侧重链式调用封装；而 Harness 重点解决长任务持久状态、断点续跑、复杂循环、容错降级、可观测性、大规模生产部署。<br>LangChain：是开发 SDK，帮你快速写 Agent，轻量原型；<br>Agent Harness：面向生产级 Agent Runtime，原生支持快照、中断人工介入、长耗时任务容错，企业生产落地痛点催生该概念，不是替代 LangChain，而是更高阶运行范式。</p>
+</blockquote>
+</li>
+<li><p>聊一聊 Harness、Hermes 这类比较新的 Agent 设计范式，最近看过哪些相关论文？（字节跳动暑期）</p>
+<blockquote>
+<p>Harness范式：偏向Runtime 驱动：规划、工具调用可以交给模型，但是流程控制、状态保存、失败恢复由外部运行时接管，强工程化，适合长任务、多轮复杂 Agent。<br>Hermes（Prompt‑centric Agent 范式）：Hermes 强调统一函数调用格式，标准化工具调用 Schema，弱化复杂硬编码规划逻辑，把大量调度逻辑交给模型本身，偏向轻量化 Agent。<br>论文：AutoGen: Enabling Next‑Gen LLM Applications via Multi‑Agent Conversation（微软）—— 多 Agent 调度原型基座<br>LangGraph &#x2F; State‑based Agent Execution（LangChain 团队工程报告）—— 状态机式 Agent 运行时<br>AgentBench: Evaluating LLMs as Agents — Agent 大规模评测 Harness 基准框架<br>OpenAI Agents SDK：标准化 Agent runtime，现代 Harness 设计思路代表<br>趋势总结：学术界早期研究模型能力；最近一年论文重点转向Agent 执行基础设施、标准化评估框架（也就是 Harness）。</p>
+</blockquote>
+</li>
+<li><p>市面上主流的开源 Agent Harness 框架有哪些？最近关注过哪些？（快手）</p>
+<blockquote>
+<p>LangGraph、AutoGen、AgentScope、LlamaIndex Workflow、Open‑Agents、CrewAI、Haystack 2.0，近期热度较高的是 LangGraph、AgentScope、OpenAI 新 Agent SDK。</p>
+</blockquote>
+</li>
+<li><p>你了解 Claude Code 的上下文管理方式和实现思路吗？（快手 &#x2F; 蔚来）</p>
+<blockquote>
+<p>我有所涉猎，我的认知里Claude Code是采用分层上下文策略：文件增量读取、动态上下文窗口滑动、代码摘要缓存、丢弃非变更文件片段；按需加载文件，不会一次性灌入全部代码库；同时支持用户指定上下文范围，配合结构化会话记忆控制 token 开销。</p>
+</blockquote>
+</li>
+<li><p>为什么不用 Deep Agents 框架而选 LangGraph？Deep Agents 不稳定的原因可能是什么？</p>
+<blockquote>
+<p>LangGraph 原生显式状态管理、可控分支循环、持久快照，可调试可回滚，生产可控。<br>Deep Agents 不稳定原因：隐式自我规划循环无约束、状态不可控、没有强制断点校验、自我反思发散不可控，缺少工程层面的容错边界。</p>
+</blockquote>
+</li>
+<li><p>业界 Agent Runtime 越来越多，平台侧如何统一适配和管理？</p>
+<blockquote>
+<p>1、定义标准化 Agent 执行协议、状态结构、工具调用接口；<br>2、统一网关调度、日志埋点、指标监控；<br>3、适配器模式封装不同 Runtime；<br>4、统一持久化存储、权限、版本管理；<br>5、提供统一编排控制台。</p>
+</blockquote>
+</li>
+<li><p>未来更可能是一个 Super Agent 通吃所有任务，还是 Host Agent 加多个 Sub Agent 的组合？</p>
+<blockquote>
+<p>中长期更偏向 Host 主 Agent + 多个专用 Sub‑Agent。单一 Super Agent 很难在所有细分任务上做到最优；主 Agent 负责任务拆分、路由、结果聚合，子 Agent 专精单一领域，成本可控、可独立迭代。</p>
+</blockquote>
+</li>
+<li><p>LangChain 和 LangGraph 有什么区别？LangGraph 的状态快照机制怎么实现？（字节跳动 &#x2F; 快手 &#x2F; 阿里巴巴）</p>
+<blockquote>
+<p>LangChain：线性 Chain，无原生循环分支；LangGraph 是基于图的状态机，支持循环、分支、断点、持久化快照。<br>快照实现：自定义 State 对象，每一步节点执行完成序列化保存状态（内存 &#x2F; 外部存储），节点执行完成生成 checkpoint，中断后从指定 checkpoint 恢复执行。</p>
+</blockquote>
+</li>
+<li><p>Java 生态里为什么选 Spring AI 而不是 LangChain4j？（京东 &#x2F; 字节跳动 &#x2F; 快手）</p>
+<blockquote>
+<p>SpringAI 深度融入 Spring 全家桶，配置化开发、原生 SpringBoot 自动装配、企业生态成熟；LangChain4j 是 Java 版 LangChain，API 风格偏原生代码编程，与 Spring 体系整合成本更高。</p>
+</blockquote>
+</li>
+<li><p>Java 生态还有哪些主流 Agent 框架？（快手 &#x2F; 京东）</p>
+<blockquote>
+<p>Python 生态主力：LangChain &#x2F; LangGraph &#x2F; AutoGen &#x2F; CrewAI &#x2F; Haystack &#x2F; LlamaIndex &#x2F; OpenAI Agents SDK<br>JS&#x2F;TS：LangChain.js，Vercel AI SDK<br>Go：Go‑Agent 框架、自研轻量 Runtime</p>
+</blockquote>
+</li>
+<li><p>Agent 的组装链 &#x2F; 执行链如何设计，执行失败时如何降级？</p>
+<blockquote>
+<p>执行链：规划节点 → 工具调用节点 → 结果校验节点 → 反思重试节点，用状态机做 DAG 编排；<br>降级策略：1）工具调用失败自动重试；2）多次失败切换备用工具；3）复杂失败交由人工介入；4）截断任务返回阶段性结果；5）切换更小难度的子方案兜底输出。</p>
+</blockquote>
+</li>
+</ul>
+<h1 id="工具调用：Function-Calling、MCP-与-Skills"><a href="#工具调用：Function-Calling、MCP-与-Skills" class="headerlink" title="工具调用：Function Calling、MCP 与 Skills"></a>工具调用：Function Calling、MCP 与 Skills</h1><ul>
+<li>Function Calling 的原理是什么？模型如何知道该调用哪个工具？如何理解 Tool Use？（阿里巴巴 &#x2F; 快手 &#x2F; 京东）</li>
+<li>如果大模型返回的 Function Call 参数格式不对，工程上怎么处理？（阿里巴巴）</li>
+<li>MCP 是什么？主要作用是什么？（字节跳动 &#x2F; 腾讯 &#x2F; 京东 &#x2F; 阿里巴巴）</li>
+<li>MCP 是什么，它解决了什么问题？（抖音）</li>
+<li>MCP 协议底层原理是什么，和传统 Tool 注册方式有什么区别？（阿里巴巴）</li>
+<li>MCP 与 Function Calling 有什么区别？（字节跳动 &#x2F; 快手 &#x2F; 货拉拉 &#x2F; 百度）</li>
+<li>MCP 是什么，MCP 的通信方式有哪些？（阿里巴巴）</li>
+<li>MCP Server 具体怎么开发？（阿里巴巴）</li>
+<li>MCP 在实际项目中可以用来做什么？</li>
+<li>MCP 应该如何设计才能兼顾扩展性和安全性？（字节跳动 &#x2F; 携程）</li>
+<li>没有 MCP 之前，多 Agent 协同是怎么做的？（靠 Function Calling 分发）</li>
+<li>MCP 是否已经过时？为什么现在讨论热度没那么高了？（阿里千问）</li>
+<li>A2A 和 MCP 是什么关系？多 Agent 之间的通信协议应该怎么设计？（阿里千问 &#x2F; 字节跳动）</li>
+<li>MCP 和 Skills 有什么区别？（TikTok &#x2F; 京东 &#x2F; 字节跳动 &#x2F; 美团 &#x2F; 腾讯 &#x2F; 阿里云 &#x2F; 小红书）</li>
+<li>Prompt、MCP、Skills、Subagent 分别应该怎么理解？（字节跳动）</li>
+<li>Function Call、MCP、Skill 三者的边界在哪？（B站）</li>
+<li>AI Agent 里的 Skills 具体指什么？（美团）</li>
+<li>Agent Skill 是什么，模型是怎么被引导调用一个 Skill 的？</li>
+<li>为什么用 Skills 能减少 token 消耗？（网易 &#x2F; 快手 &#x2F; 腾讯）</li>
+<li>从使用经验来看，Skill 和 Rule 有什么区别？（腾讯 &#x2F; 蚂蚁集团）</li>
+<li>Skill 的渐进式披露具体是怎么实现的？为什么 Agent 能力要采用渐进式披露？（美团）</li>
+<li>如果让你设计一套 Agent Skill 系统，会怎么设计？一个好的 Skill 结构应该包含哪些字段？（快手）</li>
+<li>注册了上百个候选 Skill，该怎么处理——检索、分层还是渐进式披露？（快手）</li>
+<li>大规模工具集下如何降低工具调用幻觉、提升选对工具的准确率？（字节跳动 &#x2F; 快手）</li>
+<li>工具调用的编排放在 Skill 里还是 Agent 里？工具是在 Agent 内定义，还是由 MCP 平台统一提供？</li>
+<li>如何决定哪个 Agent 能访问哪些 MCP 服务？是不是所有 Agent 都该能访问全部 MCP？</li>
+<li>工具调用报错、长时间无响应、连续失败时，重试、超时与异常隔离策略怎么设计？（快手 &#x2F; 蔚来）</li>
+<li>多工具调用系统如何编排？通常包含哪些模块？（百度）</li>
+<li>Spring AI Alibaba 的 Function Calling 具体是如何实现的？（字节跳动 &#x2F; 快手）</li>
+</ul>
+<h1 id="记忆管理与上下文工程"><a href="#记忆管理与上下文工程" class="headerlink" title="记忆管理与上下文工程"></a>记忆管理与上下文工程</h1><ul>
+<li>Agent 的短期记忆和长期记忆如何实现、如何区分？（京东 &#x2F; 携程 &#x2F; 美团）</li>
+<li>Agent 记忆管理整体如何设计？记忆模块选什么数据库，选型依据是什么？（京东 &#x2F; 京东科技 &#x2F; 滴滴）</li>
+<li>长期记忆和 RAG 有什么区别？Agent 的记忆为什么要区分长短期，架构上有什么不同？（阿里千问 &#x2F; 通义）</li>
+<li>记忆如何召回？如何避免不同问题召回的记忆相互污染？（字节跳动）</li>
+<li>在 Agent 项目中如何设计上下文管理机制？（京东物流 &#x2F; 阿里云）</li>
+<li>检索 Agent 中如何进行上下文管理？（小红书）</li>
+<li>上下文工程应该如何设计，涵盖哪些环节？最重要的是哪一环？（高德 &#x2F; 字节跳动）</li>
+<li>上下文压缩应该放在链路的哪一步？先压缩再向量化，还是反过来？（字节跳动）</li>
+<li>长对话 &#x2F; 上下文窗口受限时如何处理？滑动窗口 + 摘要方案具体怎么落地？（字节跳动 &#x2F; 腾讯）</li>
+<li>工具调用结果怎么压缩——原地压缩还是交给另一个模型处理？对执行效果和耗时有什么影响？（字节跳动 &#x2F; 蔚来）</li>
+<li>为什么上下文越长，模型结果反而越不稳定？为什么指令在上下文里的位置会影响效果？</li>
+<li>快到上下文窗口阈值时，如何避免一次性大段压缩打断用户体验？（字节跳动）</li>
+<li>除了压缩，还有哪些规避上下文窗口限制的方案？大结果卸载在工程上怎么实现？（字节跳动 &#x2F; 蔚来）</li>
+<li>多轮长任务如何避免「任务目标迷失」？如何理解「无限长记忆」和必须舍弃历史信息之间的矛盾？（字节跳动）</li>
+<li>怎么区分上下文污染和工具污染？AI 工具上下文跑偏时，是继续控制上下文还是新开一个 session？（字节跳动）</li>
+<li>长期运行的 Agent 面对数月甚至更久的历史对话，记忆系统怎么持续优化？（小红书 &#x2F; 蔚来）</li>
+<li>记忆有没有量化指标？怎么评测记忆对 Agent 效果的贡献？</li>
+<li>多工具调用和长短期记忆场景下，哪些数据需要写入记忆？判断标准是什么？（百度）</li>
+<li>如何保证压缩过程中不丢关键内容？压缩导致结果失真如何缓解？（小红书）</li>
+</ul>
+<h1 id="多智能体协作与编排"><a href="#多智能体协作与编排" class="headerlink" title="多智能体协作与编排"></a>多智能体协作与编排</h1><ul>
+<li>多 Agent 协作模式如何理解？多 Agent 相比单智能体的优势是什么？（阿里巴巴 &#x2F; 美团）</li>
+<li>常见的 Agent 架构模式有哪些，多 Agent 场景下如何选型？（阿里巴巴）</li>
+<li>子 Agent 之间如何交互 &#x2F; 通信？交互协议如何设计？串行还是并行执行，如何取舍？（美团 &#x2F; 快手）</li>
+<li>主 Agent 如何动态识别并选择要调用的子 Agent？固定工作流还是动态判断？（美团）</li>
+<li>多个 Agent 策略结论 &#x2F; 角色不一致时如何处理？（京东）</li>
+<li>主 Agent 怎么知道子 Agent 已经执行完成？子任务结果如何回收？（蔚来）</li>
+<li>多 Agent 用独立 JSON 消息做异步通信要怎么设计？通信失败有哪些兜底机制？（蔚来）</li>
+<li>用 Markdown 文件在 Agent 之间传递任务时，如何防止任务拆分阶段的错误一路传播下去？（字节跳动）</li>
+<li>多个 Agent 如何做到完全隔离（上下文、权限、存储）？跨 Agent 场景下统一存储怎么通信和传输？（字节跳动 &#x2F; 蚂蚁集团）</li>
+<li>多 Agent 调研类系统该选中心化还是去中心化调度？怎么做到子任务失败可回退、进度可观测？</li>
+<li>除了路由分发，还有哪些常见的多 Agent 协作方式？Agent Team 和动态任务分发机制了解吗？（字节跳动）</li>
+<li>多智能体是否真的能提升效率？相比单智能体的独特价值怎么证明、怎么评估？（字节跳动）</li>
+<li>子 Agent 执行中发现需要额外的新任务，任务应该怎么流转和审批？（腾讯广告）</li>
+<li>Agent 平台的多模块集成架构如何设计？（腾讯）</li>
+<li>Agent的核心技术组成和执行链路是什么？（快手）</li>
+</ul>
+<h1 id="评估、幻觉与安全兜底"><a href="#评估、幻觉与安全兜底" class="headerlink" title="评估、幻觉与安全兜底"></a>评估、幻觉与安全兜底</h1><ul>
+<li>怎么降低ai幻觉？</li>
+<li>Agent 评估体系包括哪些维度？如何衡量 planning 能力 vs hallucination rate？（阿里巴巴）</li>
+<li>如何构建 Agent 的评测体系？（Shopee &#x2F; 小红书）</li>
+<li>Agent 项目应该统计哪些指标来衡量效果？（字节跳动）</li>
+<li>智能体死循环 &#x2F; 无限调用的原因及解决方案？为什么要设计三层防护机制？（字节跳动 &#x2F; 快手）</li>
+<li>Agent 如何做权限控制避免越权 &#x2F; 不合理操作？高危场景如何限制 Agent 直接执行真实资金操作？（腾讯 &#x2F; 京东）</li>
+<li>Prompt Injection &#x2F; Indirect Prompt Injection 是什么？如何防范恶意提示词注入？（钉钉 &#x2F; 小红书）</li>
+<li>沙箱机制如何实现？（B站系统设计）</li>
+<li>生产环境 Agent 的四类典型故障——思考链错误传播、工具幻觉、JSON 格式崩坏、无限循环——分别怎么发生的？如何分三层解决？（字节跳动）</li>
+<li>如何设计机制终止无效循环，而不是只依赖最大轮次？超时和重试限制怎么设？（字节跳动）</li>
+<li>线上 Agent 一直调工具但不返回结果，怎么 Debug？多步任务失败时如何区分是 Prompt、模型、工具还是逻辑问题？（字节跳动 &#x2F; 腾讯混元）</li>
+<li>如何建立 Agent 的可观测性（轨迹留存、指标、回放）？（通义）</li>
+<li>幻觉率怎么定义和计算？降幻觉的数字是怎么量化出来的？（字节跳动）</li>
+<li>如果检测 Agent 自身也会幻觉，工程上如何保证检测 Agent 可靠？（美团）</li>
+<li>Agent 前序步骤产生幻觉、导致链式积累时应该如何处理？（美团）</li>
+<li>如何区分「内容过时」和「模型幻觉」？（字节跳动）</li>
+<li>HITL：触发人工确认时 Agent Loop 处于什么状态？状态怎么暂停、暂存和恢复？（蔚来）</li>
+<li>哪些内容必须人工审核、不能交给 Agent？运维类 Agent 能重启机器和服务时，高危操作怎么管控？（蚂蚁集团 &#x2F; 唯品会）</li>
+<li>如何防止网页、外部文档里的恶意指令注入 Agent？抓回来的内容怎么保证可信？（字节跳动）</li>
+<li>Agent 已经完成初始身份认证，为什么还需要连续认证？（字节跳动）</li>
+<li>Agent 执行到中间某个阶段出异常，如何断点恢复？整体兜底方案是什么？（字节跳动）</li>
+<li>Agent 的兜底策略如何设计？（京东 &#x2F; 字节跳动）</li>
+<li>Agent 的执行过程要不要向用户透明展示？展示到什么粒度？</li>
+</ul>
+<h1 id="系统设计题（高频压轴）"><a href="#系统设计题（高频压轴）" class="headerlink" title="系统设计题（高频压轴）"></a>系统设计题（高频压轴）</h1><ul>
+<li>设计一个多 Agent 自动 PR 系统，从沙箱、Agent 通信、上下文管理、工具触发、安全性几个角度展开。（B站）</li>
+<li>AI 客服 Agent 项目如何设计？RAG 如何分块和选择向量模型？（阿里巴巴）</li>
+<li>视频问答 Agent &#x2F; 股票分析 Agent 全链路如何设计？（阿里巴巴 &#x2F; 快手 &#x2F; 京东）</li>
+<li>设计一个 AI 代码 Review Agent：输入一个 PR，整体方案怎么做？怎么保证它只提意见、不直接改代码？（字节跳动）</li>
+<li>企业知识库 Agent 主要解决什么业务问题？完整链路、文档导入、权限隔离、效果评测怎么串起来？（Shopee &#x2F; 字节跳动）</li>
+<li>企业知识库 Agent 的消息推送功能如何设计？（Shopee）</li>
+<li>设计一个内容标注 Agent（视频 &#x2F; 图文）：流程如何划分，要用到素材里的哪些信息？（抖音）</li>
+<li>设计电商客服 Agent：如何理解表达能力参差的用户的模糊需求？核心成功指标怎么定？（通义）</li>
+<li>设计运维 &#x2F; 故障排查 Agent：支付接口超时时它怎么跑完整套排查流程？高危操作如何管控？（字节跳动 &#x2F; 唯品会）</li>
+<li>设计多 Agent 文献调研系统：三个核心风险是什么，分别怎么应对？</li>
+<li>请完整介绍一个 Agent 项目从需求到技术落地的全流程。（阿里云）</li>
+<li>如何对比 GPT、Claude、Grok、Gemini、Manus 和 DeepSeek 的 Deep Research 功能？（抖音）</li>
+<li>如何评价 Manus 当前推出的功能？（抖音）</li>
+<li>Manus、扣子空间等智能体产品有哪些体验问题，你会怎么改进？（抖音）</li>
+<li>针对智能体 Plan 和 Report 阶段的不足，如何向研发提出可执行的需求？（抖音）</li>
+</ul>
+<h1 id="Agent手撕代码"><a href="#Agent手撕代码" class="headerlink" title="Agent手撕代码"></a>Agent手撕代码</h1><p>大模型岗的手撕分两类：一类是 Agent 特色的模型 &#x2F; 工程手撕，一类是照常考的通用算法题，前者近一年权重明显上升。</p>
+<ul>
+<li>脱离任何框架，手写一个 ReAct 模式的最小 Agent：工具注册、循环控制、终止条件、异常处理分别怎么实现？（2026 下半年新出现的高频手撕，应用岗尤其常考）</li>
+</ul>
+<blockquote>
+<p>ReAct 核心四要素:1、工具注册：字典维护工具名→函数、入参描述<br>2、循环控制：思考 (Thought) → 行动 (Action) → 观察 (Observation) 循环<br>3、终止条件：拿到最终答案标识 Finish，或者达到最大轮次<br>4、异常处理：工具不存在、参数错误、执行报错、超时捕获</p>
+</blockquote>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Callable</span>, <span class="type">Dict</span>, <span class="type">Any</span></span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"><span class="comment"># ====================== 1.工具注册模块 ======================</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ToolRegistry</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="variable language_">self</span>.tools: <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]] = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">register</span>(<span class="params">self, name: <span class="built_in">str</span>, func: <span class="type">Callable</span>, desc: <span class="built_in">str</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.tools[name] = &#123;<span class="string">&quot;fn&quot;</span>: func, <span class="string">&quot;desc&quot;</span>: desc&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get_tool</span>(<span class="params">self, name: <span class="built_in">str</span></span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.tools.get(name)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 示例工具</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">calculator</span>(<span class="params">expr: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">str</span>(<span class="built_in">eval</span>(expr))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;搜索结果:<span class="subst">&#123;query&#125;</span>的相关资料&quot;</span></span><br><span class="line"></span><br><span class="line">registry = ToolRegistry()</span><br><span class="line">registry.register(<span class="string">&quot;calculator&quot;</span>, calculator, <span class="string">&quot;数学计算，参数expr：表达式字符串&quot;</span>)</span><br><span class="line">registry.register(<span class="string">&quot;search&quot;</span>, search, <span class="string">&quot;联网搜索，参数query：搜索词&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ====================== 2.ReAct Agent 主循环 ======================</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ReActAgent</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, registry: ToolRegistry, max_step=<span class="number">5</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.registry = registry</span><br><span class="line">        <span class="variable language_">self</span>.max_step = max_step</span><br><span class="line">        <span class="variable language_">self</span>.history = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">llm_plan</span>(<span class="params">self, prompt: <span class="built_in">str</span></span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;模拟大模型输出 Thought / Action / Finish&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">if</span> <span class="string">&quot;计算&quot;</span> <span class="keyword">in</span> prompt:</span><br><span class="line">            <span class="keyword">return</span> json.dumps(&#123;<span class="string">&quot;thought&quot;</span>:<span class="string">&quot;需要调用计算器&quot;</span>,<span class="string">&quot;action&quot;</span>:<span class="string">&quot;calculator&quot;</span>,<span class="string">&quot;args&quot;</span>:&#123;<span class="string">&quot;expr&quot;</span>:<span class="string">&quot;1+2*3&quot;</span>&#125;&#125;)</span><br><span class="line">        <span class="keyword">if</span> <span class="string">&quot;查资料&quot;</span> <span class="keyword">in</span> prompt:</span><br><span class="line">            <span class="keyword">return</span> json.dumps(&#123;<span class="string">&quot;thought&quot;</span>:<span class="string">&quot;调用搜索工具&quot;</span>,<span class="string">&quot;action&quot;</span>:<span class="string">&quot;search&quot;</span>,<span class="string">&quot;args&quot;</span>:&#123;<span class="string">&quot;query&quot;</span>:<span class="string">&quot;人工智能发展&quot;</span>&#125;&#125;)</span><br><span class="line">        <span class="keyword">return</span> json.dumps(&#123;<span class="string">&quot;thought&quot;</span>:<span class="string">&quot;已有答案&quot;</span>,<span class="string">&quot;action&quot;</span>:<span class="string">&quot;finish&quot;</span>,<span class="string">&quot;args&quot;</span>:&#123;<span class="string">&quot;ans&quot;</span>:<span class="string">&quot;任务结束&quot;</span>&#125;&#125;)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self, user_query: <span class="built_in">str</span></span>):</span><br><span class="line">        step = <span class="number">0</span></span><br><span class="line">        <span class="keyword">while</span> step &lt; <span class="variable language_">self</span>.max_step:</span><br><span class="line">            step += <span class="number">1</span></span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;\n=====Step <span class="subst">&#123;step&#125;</span>=====&quot;</span>)</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                llm_out = <span class="variable language_">self</span>.llm_plan(user_query)</span><br><span class="line">                data = json.loads(llm_out)</span><br><span class="line">                thought = data[<span class="string">&quot;thought&quot;</span>]</span><br><span class="line">                action_name = data[<span class="string">&quot;action&quot;</span>]</span><br><span class="line">                args = data[<span class="string">&quot;args&quot;</span>]</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;Thought:<span class="subst">&#123;thought&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">                <span class="comment"># 终止条件</span></span><br><span class="line">                <span class="keyword">if</span> action_name == <span class="string">&quot;finish&quot;</span>:</span><br><span class="line">                    <span class="keyword">return</span> <span class="string">f&quot;FinalAnswer: <span class="subst">&#123;args[<span class="string">&#x27;ans&#x27;</span>]&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">                tool_item = <span class="variable language_">self</span>.registry.get_tool(action_name)</span><br><span class="line">                <span class="keyword">if</span> <span class="keyword">not</span> tool_item:</span><br><span class="line">                    obs = <span class="string">f&quot;Error:工具 <span class="subst">&#123;action_name&#125;</span> 不存在&quot;</span></span><br><span class="line">                <span class="keyword">else</span>:</span><br><span class="line">                    fn = tool_item[<span class="string">&quot;fn&quot;</span>]</span><br><span class="line">                    obs = fn(**args)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;Observation:<span class="subst">&#123;obs&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="variable language_">self</span>.history.append(&#123;<span class="string">&quot;step&quot;</span>:step,<span class="string">&quot;action&quot;</span>:action_name,<span class="string">&quot;obs&quot;</span>:obs&#125;)</span><br><span class="line">                user_query += <span class="string">f&quot;\n观察:<span class="subst">&#123;obs&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">            <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">                obs = <span class="string">f&quot;Exception:<span class="subst">&#123;<span class="built_in">str</span>(e)&#125;</span>&quot;</span></span><br><span class="line">                <span class="variable language_">self</span>.history.append(&#123;<span class="string">&quot;step&quot;</span>:step,<span class="string">&quot;error&quot;</span>:obs&#125;)</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;超过最大迭代轮次<span class="subst">&#123;self.max_step&#125;</span>，终止执行&quot;</span></span><br><span class="line"></span><br><span class="line">agent = ReActAgent(registry)</span><br><span class="line"><span class="built_in">print</span>(agent.run(<span class="string">&quot;帮我计算1+2*3&quot;</span>))</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>手写一个简易上下文压缩 &#x2F; 滑动窗口摘要逻辑（给定消息列表和 token 上限，决定保留、摘要还是卸载）</li>
+</ul>
+<blockquote>
+<p>规则：维护消息列表，给定 token 上限；策略：保留最近 N 条完整消息，更早的历史合并成一段摘要，超过阈值裁剪<br>策略区分：<br>总 token &lt; limit：完整保留<br>轻微溢出：滑动窗口丢弃最早单条<br>大量超长：旧消息摘要压缩，最新交互完整保留（保证 LLM 感知最新意图）</p>
+</blockquote>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">count_token</span>(<span class="params">text:<span class="built_in">str</span></span>)-&gt;<span class="built_in">int</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;模拟token计数&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(text)//<span class="number">3</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">compress_messages</span>(<span class="params">messages:<span class="built_in">list</span>, token_limit:<span class="built_in">int</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    messages: [&#123;&quot;role&quot;:&quot;user&quot;,&quot;content&quot;:&quot;xxx&quot;&#125;,...]</span></span><br><span class="line"><span class="string">    返回裁剪后的对话上下文</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    total = <span class="built_in">sum</span>(count_token(m[<span class="string">&quot;content&quot;</span>]) <span class="keyword">for</span> m <span class="keyword">in</span> messages)</span><br><span class="line">    <span class="keyword">if</span> total &lt;= token_limit:</span><br><span class="line">        <span class="keyword">return</span> messages.copy()</span><br><span class="line">    <span class="comment"># 保留最后2条原始对话，前面全部摘要压缩</span></span><br><span class="line">    keep_recent = <span class="number">2</span></span><br><span class="line">    recent = messages[-keep_recent:]</span><br><span class="line">    old_msgs = messages[:-keep_recent]</span><br><span class="line">    summary_text = <span class="string">&quot;【历史对话摘要】&quot;</span>+<span class="string">&quot; | &quot;</span>.join([m[<span class="string">&quot;content&quot;</span>] <span class="keyword">for</span> m <span class="keyword">in</span> old_msgs])</span><br><span class="line">    summary_msg = &#123;<span class="string">&quot;role&quot;</span>:<span class="string">&quot;system&quot;</span>,<span class="string">&quot;content&quot;</span>:summary_text&#125;</span><br><span class="line">    new_context = [summary_msg] + recent</span><br><span class="line">    <span class="comment"># 如果压缩后依然超限，递归丢弃更早摘要</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">sum</span>(count_token(x[<span class="string">&quot;content&quot;</span>]) <span class="keyword">for</span> x <span class="keyword">in</span> new_context) &gt; token_limit:</span><br><span class="line">        <span class="keyword">return</span> compress_messages(new_context, token_limit)</span><br><span class="line">    <span class="keyword">return</span> new_context</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Agent 如何完成一次完整的工具调用？从解析参数到执行、回传结果的链路要能手写出来。</li>
+</ul>
+<blockquote>
+<p>1、 <strong>上下文送入LLM</strong>：prompt包含工具描述、对话历史，模型输出结构化工具调用JSON（工具名+入参）<br>2、 <strong>输出解析层</strong>：正则&#x2F;json解析，校验字段合法性；捕获格式错误，生成纠错Observation回传给模型<br>3、 <strong>参数校验</strong>：检查必填参数、类型校验；缺失参数返回错误观察值，Agent重新思考补全参数<br>4、<strong>路由分发</strong>：工具注册表匹配函数，区分本地函数&#x2F;HTTP API调用<br>5、<strong>执行层</strong>：捕获运行异常、超时控制；API调用增加重试<br>6、 <strong>结果序列化</strong>：把返回值转为字符串&#x2F;JSON，包装成Observation<br>7、 <strong>追加到对话历史</strong>：将工具结果拼入上下文，开启下一轮ReAct循环<br>8、 <strong>终止判断</strong>：模型判断是否已经获得最终答案，输出结果结束循环</p>
+</blockquote>
+<p>文字伪代码流程</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">UserQuery → LLM(Thought + Action + Args)</span><br><span class="line">→ Parser()</span><br><span class="line">→ ValidateArgs()</span><br><span class="line">→ DispatchTool()</span><br><span class="line">→ RunTool() [<span class="keyword">try</span>-catch/timeout]</span><br><span class="line">→ BuildObservation()</span><br><span class="line">→ AppendToHistory()</span><br><span class="line">→ Loop <span class="keyword">or</span> Finish</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>手写一个简单的多 Agent 消息路由器：按角色 &#x2F; 能力把任务分发给对应子 Agent，并处理超时和失败重试。</li>
+</ul>
+<blockquote>
+<p>能力匹配：关键词路由；工程版改用embedding相似度匹配<br>超时：Thread.join(timeout)<br>重试：while循环达到最大重试次数终止</p>
+</blockquote>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> threading, time</span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">SubAgent</span>:</span><br><span class="line">    name:<span class="built_in">str</span></span><br><span class="line">    capability:<span class="built_in">list</span></span><br><span class="line">    run_func:<span class="built_in">callable</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AgentRouter</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,timeout=<span class="number">3</span>,retry=<span class="number">2</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.agents = []</span><br><span class="line">        <span class="variable language_">self</span>.timeout = timeout</span><br><span class="line">        <span class="variable language_">self</span>.max_retry = retry</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">register_agent</span>(<span class="params">self,agent:SubAgent</span>):</span><br><span class="line">        <span class="variable language_">self</span>.agents.append(agent)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">match_agent</span>(<span class="params">self,task:<span class="built_in">str</span></span>):</span><br><span class="line">        <span class="keyword">for</span> a <span class="keyword">in</span> <span class="variable language_">self</span>.agents:</span><br><span class="line">            <span class="keyword">for</span> skill <span class="keyword">in</span> a.capability:</span><br><span class="line">                <span class="keyword">if</span> skill <span class="keyword">in</span> task:</span><br><span class="line">                    <span class="keyword">return</span> a</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">exec_task</span>(<span class="params">self, task:<span class="built_in">str</span></span>):</span><br><span class="line">        attempt = <span class="number">0</span></span><br><span class="line">        <span class="keyword">while</span> attempt &lt;= <span class="variable language_">self</span>.max_retry:</span><br><span class="line">            attempt +=<span class="number">1</span></span><br><span class="line">            target = <span class="variable language_">self</span>.match_agent(task)</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> target:</span><br><span class="line">                <span class="keyword">return</span> &#123;<span class="string">&quot;status&quot;</span>:<span class="string">&quot;fail&quot;</span>,<span class="string">&quot;msg&quot;</span>:<span class="string">&quot;无匹配子Agent&quot;</span>&#125;</span><br><span class="line">            res = &#123;&#125;</span><br><span class="line">            <span class="keyword">def</span> <span class="title function_">worker</span>():</span><br><span class="line">                <span class="keyword">try</span>:</span><br><span class="line">                    res[<span class="string">&quot;data&quot;</span>] = target.run_func(task)</span><br><span class="line">                    res[<span class="string">&quot;ok&quot;</span>]=<span class="literal">True</span></span><br><span class="line">                <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">                    res[<span class="string">&quot;ok&quot;</span>]=<span class="literal">False</span></span><br><span class="line">                    res[<span class="string">&quot;err&quot;</span>]=<span class="built_in">str</span>(e)</span><br><span class="line">            t = threading.Thread(target=worker)</span><br><span class="line">            t.start()</span><br><span class="line">            t.join(timeout=<span class="variable language_">self</span>.timeout)</span><br><span class="line">            <span class="keyword">if</span> t.is_alive():</span><br><span class="line">                res = &#123;<span class="string">&quot;ok&quot;</span>:<span class="literal">False</span>,<span class="string">&quot;err&quot;</span>:<span class="string">&quot;timeout&quot;</span>&#125;</span><br><span class="line">            <span class="keyword">if</span> res.get(<span class="string">&quot;ok&quot;</span>):</span><br><span class="line">                <span class="keyword">return</span> &#123;<span class="string">&quot;status&quot;</span>:<span class="string">&quot;success&quot;</span>,<span class="string">&quot;agent&quot;</span>:target.name,<span class="string">&quot;result&quot;</span>:res[<span class="string">&quot;data&quot;</span>]&#125;</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;status&quot;</span>:<span class="string">&quot;fail&quot;</span>,<span class="string">&quot;retry_exhaust&quot;</span>,<span class="string">&quot;task&quot;</span>:task&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># demo</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">math_agent</span>(<span class="params">task</span>): <span class="keyword">return</span> <span class="string">&quot;计算完成&quot;</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">write_agent</span>(<span class="params">task</span>): <span class="keyword">return</span> <span class="string">&quot;文案生成完毕&quot;</span></span><br><span class="line"></span><br><span class="line">router = AgentRouter(timeout=<span class="number">2</span>,retry=<span class="number">2</span>)</span><br><span class="line">router.register_agent(SubAgent(<span class="string">&quot;math_agent&quot;</span>,[<span class="string">&quot;计算&quot;</span>],math_agent))</span><br><span class="line">router.register_agent(SubAgent(<span class="string">&quot;writer&quot;</span>,[<span class="string">&quot;写文案&quot;</span>],write_agent))</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(router.exec_task(<span class="string">&quot;帮我计算100!&quot;</span>))</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Java 动态代理有哪些实现方式？和 Agent 框架里的动态调度思路有什么可以类比的地方？</li>
+</ul>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">111</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>手写一个死循环检测器：给定 Agent 的调用轨迹，判断是否陷入重复调用同一工具的死循环。</li>
+</ul>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">212321321</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>反转链表 &#x2F; 链表相加（双指针）&#x2F; 排序链表</li>
+</ul>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1231232112321321</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>二叉树层序遍历、接雨水、无重复字符的最长子串</li>
+</ul>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 二叉树层序遍历 BFS</span></span><br><span class="line"><span class="keyword">from</span> collections <span class="keyword">import</span> deque</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TreeNode</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,val=<span class="number">0</span>,left=<span class="literal">None</span>,right=<span class="literal">None</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.val=val</span><br><span class="line">        <span class="variable language_">self</span>.left=left</span><br><span class="line">        <span class="variable language_">self</span>.right=right</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">levelOrder</span>(<span class="params">root</span>):</span><br><span class="line">    res = []</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> root:<span class="keyword">return</span> res</span><br><span class="line">    q = deque([root])</span><br><span class="line">    <span class="keyword">while</span> q:</span><br><span class="line">        level = []</span><br><span class="line">        <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(q)):</span><br><span class="line">            node = q.popleft()</span><br><span class="line">            level.append(node.val)</span><br><span class="line">            <span class="keyword">if</span> node.left:q.append(node.left)</span><br><span class="line">            <span class="keyword">if</span> node.right:q.append(node.right)</span><br><span class="line">        res.append(level)</span><br><span class="line">    <span class="keyword">return</span> res</span><br><span class="line"></span><br><span class="line"><span class="comment"># 接雨水（双指针最优 O (n),O (1)）</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">trap</span>(<span class="params">height</span>):</span><br><span class="line">    l,r = <span class="number">0</span>,<span class="built_in">len</span>(height)-<span class="number">1</span></span><br><span class="line">    maxL,maxR = <span class="number">0</span>,<span class="number">0</span></span><br><span class="line">    ans =<span class="number">0</span></span><br><span class="line">    <span class="keyword">while</span> l&lt;r:</span><br><span class="line">        <span class="keyword">if</span> height[l]&lt;height[r]:</span><br><span class="line">            <span class="keyword">if</span> height[l]&gt;=maxL:</span><br><span class="line">                maxL=height[l]</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                ans+=maxL-height[l]</span><br><span class="line">            l+=<span class="number">1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">if</span> height[r]&gt;=maxR:</span><br><span class="line">                maxR=height[r]</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                ans+=maxR-height[r]</span><br><span class="line">            r-=<span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> ans</span><br><span class="line"><span class="comment"># 无重复字符的最长子串</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">lengthOfLongestSubstring</span>(<span class="params">s:<span class="built_in">str</span></span>):</span><br><span class="line">    win = <span class="built_in">set</span>()</span><br><span class="line">    l=<span class="number">0</span></span><br><span class="line">    res=<span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> r <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(s)):</span><br><span class="line">        <span class="keyword">while</span> s[r] <span class="keyword">in</span> win:</span><br><span class="line">            win.remove(s[l])</span><br><span class="line">            l+=<span class="number">1</span></span><br><span class="line">        win.add(s[r])</span><br><span class="line">        res = <span class="built_in">max</span>(res,r-l+<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="https://leetcode.cn/problems/trapping-rain-water/description/">42. 接雨水 - 力扣（LeetCode）</a></p>
+<ul>
+<li>Top-K（快速选择 vs 堆，复杂度 &#x2F; 并行化）、字符串解码 k[encoded]</li>
+</ul>
+<p>Top‑K 对比</p>
+<ol>
+<li><p>快速选择（快排变形）</p>
+<ul>
+<li>时间复杂度：平均 O(n)，最坏 O(n2)；原地修改，空间O(1)</li>
+<li>适合单机内存数据；不适合超大并行场景</li>
+</ul>
+</li>
+<li><p>小根堆</p>
+<ul>
+<li>O(nlogk)；遍历全部元素，维护大小 k 的堆</li>
+<li>天然支持分布式并行，分片求局部 TopK 再合并，大数据场景首选</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 字符串解码 k[xxx]（栈）</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">decodeString</span>(<span class="params">s: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    stack = []</span><br><span class="line">    num = <span class="number">0</span></span><br><span class="line">    res = <span class="string">&quot;&quot;</span></span><br><span class="line">    <span class="keyword">for</span> c <span class="keyword">in</span> s:</span><br><span class="line">        <span class="keyword">if</span> c.isdigit():</span><br><span class="line">            num = num*<span class="number">10</span> + <span class="built_in">int</span>(c)</span><br><span class="line">        <span class="keyword">elif</span> c == <span class="string">&#x27;[&#x27;</span>:</span><br><span class="line">            stack.append((res,num))</span><br><span class="line">            res = <span class="string">&quot;&quot;</span></span><br><span class="line">            num = <span class="number">0</span></span><br><span class="line">        <span class="keyword">elif</span> c == <span class="string">&#x27;]&#x27;</span>:</span><br><span class="line">            pre_str, repeat = stack.pop()</span><br><span class="line">            res = pre_str + res * repeat</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            res += c</span><br><span class="line">    <span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+
+
+<h1 id="软性问题与职业发展"><a href="#软性问题与职业发展" class="headerlink" title="软性问题与职业发展"></a>软性问题与职业发展</h1><ul>
+<li><p>深挖简历里的 Agent 项目——落地逻辑、核心难点、指标怎么量化出来的、后续改进思路——<strong>这是所有大厂面试的主线，占比最高！！！</strong></p>
+</li>
+<li><p>你自己搭过 Agent 吗？工作流是怎样的？能不能现场演示一下你负责的 Agent？（越来越常见的「当场验真」）</p>
+<blockquote>
+<p>我独立基于 LangGraph&#x2F;LangChain 搭建过任务型 Agent，完整工作流：1、用户输入 → 输入校验、过滤非法请求；2、Planner：LLM 输出结构化任务计划；3、Router 判断当前步骤是否需要调用工具；4、如果需要：参数校验 → 调用自定义 Skill&#x2F;API；5、获取返回结果，送入 Reflection 节点校验结果是否满足子目标；、校验通过：进入下一个子任务；校验失败：重试、调整参数，最多 N 次重试上限；6、全部子任务完成后，聚合全部结果生成最终回答。本地可以启动 Demo，输入自然语言指令，观察：任务拆分日志、工具调用参数、反思重试过程；生产版本封装成 API，支持批量任务统计成功率指标。如果面试环境不方便跑代码，可以展示执行日志截图、状态流转图。</p>
+</blockquote>
+</li>
+<li><p>平时用哪些 AI 编程工具（Claude Code &#x2F; Cursor &#x2F; Codex &#x2F; 通义灵码）？怎么用的？（高频闲聊切入）</p>
+<blockquote>
+<p>工具清单：Codex、Cursor、Claude Code、通义灵码，偶尔 GitHub Copilot。1、先写清晰需求与约束；2、让 AI 输出方案与修改范围；3、小批量修改，逐文件 Review；4、写完立刻补充单元测试验证。</p>
+</blockquote>
+</li>
+<li><p>你在 AI 编程工具里装了哪些 Skill、写过哪些复杂 Skill？效果怎么验证的？（快手）</p>
+<blockquote>
+<p>Skill 本质就是给 Agent 封装好的可调用能力 + 约束描述。1、格式验证：输出必须符合 JSON Schema，参数合法；2、用例验证：准备一批标准测试 case，自动化运行，看输出是否符合预期；3、人工评估 + 线上灰度统计成功率，持续迭代 Skill 描述与示例。</p>
+</blockquote>
+</li>
+<li><p>AI Coding 流程里如何避免大模型随意发挥、改坏历史功能？（阿里巴巴）</p>
+<blockquote>
+<p>四层防护策略：1、范围约束：prompt 严格限定修改文件范围，禁止修改无关代码；2、增量修改策略：不允许全量重写整个文件，优先局部修改；3、自动化防护：修改后自动跑单元测试、CI 流水线，回归原有功能；4、人工 Code Review，同时开启 Git 版本快照，一旦出问题可以一键回滚；5、使用 Agent 的 Plan 模式：先输出变更方案，人确认之后再执行修改动作。</p>
+</blockquote>
+</li>
+<li><p>AI 编程中的 Plan 模式和 Agent 模式有什么区别？（小红书）</p>
+<blockquote>
+<p>1、Plan 模式（规划优先）先一次性生成完整的修改方案、文件列表、改动点，先审批再执行。人可以审核计划是否合理，风险可控；适合大型重构、高风险代码变更。不会无限制多轮调用模型。2、Agent 模式（自主迭代执行）模型边执行边观察结果，遇到错误自动调试、重试、多轮交互；自主闭环，无需人工一步步确认；适合调试、小问题排错，但风险更高，容易越权修改代码。一句话总结：Plan 控风险，Agent 擅长自主排错调试；生产级工程优先 Plan + 人工确认，调试场景用 Agent。</p>
+</blockquote>
+</li>
+<li><p>怎么看待从提示词工程到 Skill 这类概念的快速迭代？用框架和直接调大模型的差异在哪？（字节跳动）</p>
+<blockquote>
+<p>1）从提示词到 Skill 的迭代意义：单纯写 Prompt 是一次性的、不可复用的；Skill 把能力描述、入参约束、示例、执行逻辑封装成标准化组件：可复用、可版本管理、独立评测、独立迭代，从一次性 prompt 变成工程化资产。<br>2）原生调用大模型 vs 使用 Agent 框架（LangGraph 等）1、直接裸调用 API：灵活轻量，适合简单单轮任务；但多轮记忆、状态流转、重试、校验全部要自己手写，工程成本极高，不可维护；2、Agent 框架：提供状态管理、工作流编排、持久化记忆、回调观测、可视化调试能力，把通用工程问题封装好；缺点是带来额外学习成本，复杂场景会被框架限制。<br>最佳实践：简单场景直接调用 API；多轮复杂任务、需要稳定迭代的业务 Agent 使用成熟框架。</p>
+</blockquote>
+</li>
+<li><p>To C 和 To B 的 AI Agent 哪个会先爆发？未来 AI Agent 会是什么形态？（腾讯）</p>
+<blockquote>
+<p>短期（1‑2 年）To B(Business) 会率先落地变现：企业愿意付费解决确定性工作流（数据分析、工单处理、代码开发、运维自动化），价值明确、ROI 可衡量；企业可以私有化部署，解决数据安全问题。<br>长期成熟之后 To C 迎来爆发:C 端用户对可靠性容忍度更低，幻觉问题一旦出现体验崩盘；而且 C 端付费意愿弱，商业化周期更长。<br>未来 Agent 形态：不是一个万能超级 Agent，而是大量垂直轻量化专用 Agent，互相调用协作；用户感知上是自然对话，底层是一套 Agent 服务编排平台。</p>
+</blockquote>
+</li>
+<li><p>你如何甄别 AI 输出的思路和内容是否准确，避免被幻觉带偏？（OPPO）</p>
+<blockquote>
+<p>四层校验手段：1、事实溯源：要求 AI 给出引用来源、参考文档；2、结构化校验：JSON Schema、正则校验输出格式；3、工具交叉验证：重要结论调用外部接口 &#x2F; 代码执行验算；4、反思自我校验：第二轮 Prompt 让模型自查结论是否存在矛盾；5、人工抽查 + 自动化评测数据集长期监控准确率。</p>
+</blockquote>
+</li>
+<li><p>你认为 Agent 的商业化成本是在上升还是下降？（拼多多）</p>
+<blockquote>
+<p>长期趋势成本持续下降，短期落地成本很高<br>短期：Agent 是多轮调用 + 工具调度，Token 消耗高，整体单请求成本高于普通对话；工程开发、评估运维人力成本也很高；<br>长期：模型越来越廉价，小模型轻量化推理、路由策略（简单任务交给廉价小模型）、缓存复用结果；随着规模上涨边际成本持续压低。<br>商业化成功的关键：通过工程优化降低平均轮次，把单任务成本压到低于人工成本，才有商业价值。</p>
+</blockquote>
+</li>
+<li><p>平时关注哪些 AI Agent 相关的前沿技术？最近看过哪些相关论文或产品？</p>
+<blockquote>
+<p>产品方向：Claude Code、Cursor Agent、Devin、OpenAI Agent SDK；LangGraph、AutoGen 多智能体协作框架；<br>论文 &#x2F; 技术方向：结构化规划：Tree‑of‑Thought，Reflexion（反思 Self‑Reflection）；、多智能体协作：Multi‑Agent Debate；Agent 评估：自动评测数据集，自动化 Reward 反馈；轻量化 Agent：小模型 Agent，降低推理成本；Agent 记忆机制：短期上下文记忆 + 向量长期记忆。</p>
+</blockquote>
+</li>
+</ul>
+<h1 id="备考重点"><a href="#备考重点" class="headerlink" title="备考重点"></a>备考重点</h1><p><strong>大模型应用 &#x2F; Agent 工程岗</strong>（快手 &#x2F; 腾讯 &#x2F; 京东 &#x2F; 网易 AI 应用开发）——重点在工具调用（Function Calling、MCP、Skills）、记忆与上下文工程、多智能体协作三块，几乎每题都会追一句「你们项目里具体怎么做的」，框架层面 LangGraph 和 Spring AI 都要能聊。</p>
+<p><strong>2026 下半年新增的三个重灾区</strong>：Agent Harness 与运行时工程（怎么设计、和 MCP &#x2F; Skills 的边界在哪）、评估与安全兜底（Agent Loop 状态怎么暂停恢复、越权调用怎么监控、幻觉链式传播怎么截断）、多智能体编排（去中心化调度、子任务失败可回退、跨 Agent 隔离）。这三块几乎每轮都会问到，而且都要求结合项目讲出具体做法。</p>
+<p><strong>面试官越来越爱追问「怎么量化」</strong>：幻觉率怎么定义、记忆有没有指标、Agent 效果提升的百分比用哪个测试集算出来的。简历上写的每个数字都要能讲清楚是怎么算出来的——只报结论不报口径，基本会被一路追到底。</p>
+<h1 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h1><p>这份题单是怎么整理出来的？</p>
+<blockquote>
+<p>来源是互联网，我所看到的各位大佬面试的经验贴，把 AI Agent 相关的提问单独抽出来重新归类，手动整理。</p>
+</blockquote>
+<p>AI Agent 面试和大模型算法岗面试差别大吗？</p>
+<blockquote>
+<p>差别很大。大模型算法岗重心在模型结构、训练和强化学习对齐，Agent 岗几乎不问 RLHF 推导，但工具调用、Harness、记忆与上下文工程、多智能体协作会问得非常细，还会要求现场演示或深挖你做过的 Agent 项目。如果两条线都要准备，可以搭配大模型面试题合集一起看。</p>
+</blockquote>
+<p>只背这些题能过面试吗？</p>
+<blockquote>
+<p>不能。这份题单解决的是「准备方向不跑偏」的问题——它告诉你面试官现在在问什么、往哪个方向追。但 Agent 面试有大量时间在挖你的项目细节和现场设计能力，几乎每道概念题后面都跟着一句「你们具体怎么做的、效果怎么量化的」。建议按题单排查知识盲区，同时准备一个能讲清楚设计取舍的真实案例。</p>
+</blockquote>
+<h1 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h1><p><a target="_blank" rel="noopener" href="https://programmercarl.com/qita/0022.llminterview.html">2026最全大模型面经汇总｜Agent面试题、RAG面试题、Transformer面试题合集（含答案解析） | 代码随想录-全网最全算法数据结构刷题学习路线|图文+视频教程|免费开源</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/bcefghj/ai-agent-interview-guide">github.com&#x2F;bcefghj&#x2F;ai-agent-interview-guide</a></p>
+<p><a target="_blank" rel="noopener" href="https://xiaolincoding.com/project/xiaolinnote.html">2026最全AI大模型面试题 | Agent面试题 | AI应用开发面试题 | 小林coding</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.mianlingai.com/topics/ai-agent-interview-questions-2026/">AI Agent 面试题与八股文汇总：155 道大厂真题按主题拆解（2026 面经） - 面灵AI</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.nowcoder.com/feed/main/detail/76b321bffc5e460fb316813352d8d950">Agent开发八股合集真实面经总结版_牛客网</a></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://jayashore.github.io">JayAshore</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://jayashore.github.io/posts/1788612226/">https://jayashore.github.io/posts/1788612226/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://jayashore.github.io" target="_blank">JayAshoreの博客</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/">大模型</a><a class="post-meta__tags" href="/tags/Agent/">Agent</a></div><div class="post-share"><div class="social-share" data-image="https://cdn.jsdelivr.net/gh/JayAShore/blog-images@main/images/Agent%E5%85%AB%E8%82%A1%E6%96%87%E9%9D%A2%E7%BB%8F%EF%BC%9AAI%E6%B1%82%E8%81%8C%E6%8C%87%E5%8D%97.png" data-sites="qq,wechat,weibo,facebook,twitter"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><div class="post-reward"><div class="reward-button"><i class="fas fa-qrcode"></i>赞助</div><div class="reward-main"><ul class="reward-all"><li class="reward-item"><a href="/img/wechat.jpg" target="_blank"><img class="post-qr-code-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/wechat.jpg" alt="微信支付"/></a><div class="post-qr-code-desc">微信支付</div></li><li class="reward-item"><a href="/img/alipay.jpg" target="_blank"><img class="post-qr-code-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/alipay.jpg" alt="支付宝"/></a><div class="post-qr-code-desc">支付宝</div></li></ul></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/posts/1788611910/" title="AcWing 433. ISBN号码"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cdn.jsdelivr.net/gh/JayAShore/blog-images@main/images/d3bafbf1-ae80-4e40-90cb-6a9c1e9d3f19.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">AcWing 433. ISBN号码</div></div><div class="info-2"><div class="info-item-1">Acwing算法基础课！</div></div></div></a><a class="pagination-related" href="/posts/1788615826/" title="AICoding笔试应该怎么做？"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">AICoding笔试应该怎么做？</div></div><div class="info-2"><div class="info-item-1">一网打尽大模型面试习题！</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/posts/1788615826/" title="AICoding笔试应该怎么做？"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-05 21:43</div><div class="info-item-2">AICoding笔试应该怎么做？</div></div><div class="info-2"><div class="info-item-1">一网打尽大模型面试习题！</div></div></div></a><a class="pagination-related" href="/posts/1788698715/" title="智旅优途"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-06 20:45</div><div class="info-item-2">智旅优途</div></div><div class="info-2"><div class="info-item-1">项目简介我做的是一个基于 LangChain、RAG 和大模型结构化输出的智能旅行规划平台。用户输入目的地、日期、预算、偏好和旅行节奏后，后端首先通过城市解析判断该目的地属于本地攻略覆盖城市还是动态城市。对于已覆盖城市，系统通过 Query Rewrite、Embedding、ChromaDB 向量召回和 qwen3-rerank 重排序获取相关攻略；对于动态城市，系统调用高德地图获取景点、餐厅和酒店候选池，要求 Planner 只能返回候选池中的 POI ID，从而降低模型虚构地点的风险。Planner 使用 LangChain 的 ChatOpenAI 兼容接口调用 DashScope 模型，输出 JSON 草稿，后端再通过 JSON 提取、Pydantic 校验和业务规则校验转换成统一的 Itinerary。模型只负责非确定性的行程规划，预算拆分、地图补全、天气查询和数据持久化由服务层完成。项目中比较有挑战的是 RAG 结果质量和外部服务失败问题。我通过 Query Rewrite、Rerank、目的地 metadata 过滤、Redis 缓存和规则 fallback 解决...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">JayAshore</div><div class="author-info-description">永远相信美好的事情即将发生！</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">14</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">25</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">远方的小伙伴，你好呀～\n累了就休息一下，慢慢来就好～愿你所求皆有回应，所行皆坦途。\n好好休息，别感冒🫵</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%99%BE%E5%BA%A6"><span class="toc-number">1.</span> <span class="toc-text">百度</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%BF%AB%E6%89%8B"><span class="toc-number">2.</span> <span class="toc-text">快手</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AD%97%E8%8A%82"><span class="toc-number">3.</span> <span class="toc-text">字节</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5%E4%B8%8E%E6%9E%B6%E6%9E%84%E6%A8%A1%E5%BC%8F"><span class="toc-number">4.</span> <span class="toc-text">基础概念与架构模式</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Agent-Harness-%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E5%B7%A5%E7%A8%8B"><span class="toc-number">5.</span> <span class="toc-text">Agent Harness 与运行时工程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%B7%A5%E5%85%B7%E8%B0%83%E7%94%A8%EF%BC%9AFunction-Calling%E3%80%81MCP-%E4%B8%8E-Skills"><span class="toc-number">6.</span> <span class="toc-text">工具调用：Function Calling、MCP 与 Skills</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AE%B0%E5%BF%86%E7%AE%A1%E7%90%86%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B"><span class="toc-number">7.</span> <span class="toc-text">记忆管理与上下文工程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%E5%8D%8F%E4%BD%9C%E4%B8%8E%E7%BC%96%E6%8E%92"><span class="toc-number">8.</span> <span class="toc-text">多智能体协作与编排</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%84%E4%BC%B0%E3%80%81%E5%B9%BB%E8%A7%89%E4%B8%8E%E5%AE%89%E5%85%A8%E5%85%9C%E5%BA%95"><span class="toc-number">9.</span> <span class="toc-text">评估、幻觉与安全兜底</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E9%A2%98%EF%BC%88%E9%AB%98%E9%A2%91%E5%8E%8B%E8%BD%B4%EF%BC%89"><span class="toc-number">10.</span> <span class="toc-text">系统设计题（高频压轴）</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Agent%E6%89%8B%E6%92%95%E4%BB%A3%E7%A0%81"><span class="toc-number">11.</span> <span class="toc-text">Agent手撕代码</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%BD%AF%E6%80%A7%E9%97%AE%E9%A2%98%E4%B8%8E%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95"><span class="toc-number">12.</span> <span class="toc-text">软性问题与职业发展</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A4%87%E8%80%83%E9%87%8D%E7%82%B9"><span class="toc-number">13.</span> <span class="toc-text">备考重点</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="toc-number">14.</span> <span class="toc-text">常见问题</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="toc-number">15.</span> <span class="toc-text">参考链接</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/1788701143/" title="LeetCode 739.每日温度">LeetCode 739.每日温度</a><time datetime="2026-09-06T13:25:43.000Z" title="发表于 2026-09-06 21:25 21:25:43">2026-09-06 21:25</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/1788699418/" title="后端八股文">后端八股文</a><time datetime="2026-09-06T12:56:58.000Z" title="发表于 2026-09-06 20:56 20:56:58">2026-09-06 20:56</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/1788698715/" title="智旅优途">智旅优途</a><time datetime="2026-09-06T12:45:15.000Z" title="发表于 2026-09-06 20:45 20:45:15">2026-09-06 20:45</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/1788698088/" title="零基础玩转Hermes爱马仕多智能体">零基础玩转Hermes爱马仕多智能体</a><time datetime="2026-09-06T12:34:48.000Z" title="发表于 2026-09-06 20:34 20:34:48">2026-09-06 20:34</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/1788680337/" title="LeetCode 5. 最长回文子串"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cdn.jsdelivr.net/gh/JayAShore/blog-images@main/images/d3bafbf1-ae80-4e40-90cb-6a9c1e9d3f19.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="LeetCode 5. 最长回文子串"/></a><div class="content"><a class="title" href="/posts/1788680337/" title="LeetCode 5. 最长回文子串">LeetCode 5. 最长回文子串</a><time datetime="2026-09-06T07:38:57.000Z" title="发表于 2026-09-06 15:38 15:38:57">2026-09-06 15:38</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(https://cdn.jsdelivr.net/gh/JayAShore/blog-images@main/images/Agent%E5%85%AB%E8%82%A1%E6%96%87%E9%9D%A2%E7%BB%8F%EF%BC%9AAI%E6%B1%82%E8%81%8C%E6%8C%87%E5%8D%97.png);"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2026 By JayAshore</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.2</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.7.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.7.0"></script><script src="/js/main.js?v=5.7.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar@0.1.16/dist/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  const changeScriptToMath = article => {
+    article.querySelectorAll('script[type^="math/tex"]').forEach(el => {
+      const display = /mode=display/.test(el.type)
+      const node = document.createElement(display ? 'div' : 'span')
+      node.textContent = display
+        ? `$$${el.textContent}$$`
+        : `$${el.textContent}$`
+      el.parentNode.replaceChild(node, el)
+    })
+  }
+
+  const loadMathjax = () => {
+    const article = document.getElementById('article-container')
+    if (!article || article.querySelector('.hbe-container')) return
+    changeScriptToMath(article)
+
+    if (!window.MathJax) {
+      window.MathJax = {
+        loader: {
+          load: [
+            // Four font extension packages (optional)
+            //- '[tex]/bbm',
+            //- '[tex]/bboldx',
+            //- '[tex]/dsfont',
+            '[tex]/mhchem',
+            'ui/lazy'
+          ],
+          paths: {
+            'mathjax-newcm': '[mathjax]/../@mathjax/mathjax-newcm-font',
+
+            //- // Four font extension packages (optional)
+            //- 'mathjax-bbm-extension': '[mathjax]/../@mathjax/mathjax-bbm-font-extension',
+            //- 'mathjax-bboldx-extension': '[mathjax]/../@mathjax/mathjax-bboldx-font-extension',
+            //- 'mathjax-dsfont-extension': '[mathjax]/../@mathjax/mathjax-dsfont-font-extension',
+            'mathjax-mhchem-extension': '[mathjax]/../@mathjax/mathjax-mhchem-font-extension'
+          }
+        },
+        output: {
+          font: 'mathjax-newcm',
+        },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          tags: 'none',
+          packages: {
+            '[+]': [
+              'mhchem'
+            ]
+          }
+        },
+        chtml: {
+          scale: 1.1
+        },
+        options: {
+          lazyMargin: '200px',
+          enableMenu: true,
+          menuOptions: {
+            settings: {
+              enrich: false  // Turn off Braille and voice narration text automatic generation
+            }
+          },
+        }
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-mml-chtml.min.js'
+      script.id = 'MathJax-script'
+      script.async = true
+      document.head.appendChild(script)
+    } else {
+      MathJax.typesetClear()
+      MathJax.typesetPromise([ article ])
+    }
+  }
+
+  btf.addGlobalFn('encrypt', loadMathjax, 'mathjax')
+  window.pjax ? loadMathjax() : window.addEventListener('load', loadMathjax)
+})()</script><script>(() => {
+  const parseViewBox = viewBox => {
+    if (!viewBox) return null
+    const parts = viewBox.trim().split(/[\s,]+/).map(n => Number(n))
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null
+    return parts
+  }
+
+  const getSvgViewBox = svg => {
+    const attr = parseViewBox(svg.getAttribute('viewBox'))
+    if (attr) return attr
+
+    // Fallback: use bbox to build a viewBox
+    try {
+      const bbox = svg.getBBox()
+      if (bbox && bbox.width && bbox.height) return [bbox.x, bbox.y, bbox.width, bbox.height]
+    } catch (e) {
+      // getBBox may fail on some edge cases; ignore
+    }
+
+    const w = Number(svg.getAttribute('width')) || 0
+    const h = Number(svg.getAttribute('height')) || 0
+    if (w > 0 && h > 0) return [0, 0, w, h]
+    return [0, 0, 100, 100]
+  }
+
+  const setSvgViewBox = (svg, vb) => {
+    svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`)
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+  const openSvgInNewTab = ({ source, initViewBox }) => {
+    const getClonedSvg = () => {
+      if (typeof source === 'string') {
+        const template = document.createElement('template')
+        template.innerHTML = source.trim()
+        const svg = template.content.querySelector('svg')
+        return svg ? svg.cloneNode(true) : null
+      }
+      if (source && typeof source.cloneNode === 'function') {
+        return source.cloneNode(true)
+      }
+      return null
+    }
+
+    const clone = getClonedSvg()
+    if (!clone) return
+    if (initViewBox && initViewBox.length === 4) {
+      clone.setAttribute('viewBox', initViewBox.join(' '))
+    }
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    if (!clone.getAttribute('xmlns:xlink') && clone.innerHTML.includes('xlink:')) {
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    }
+    // inject background to match current theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const bg = getComputedStyle(document.body).backgroundColor || (isDark ? '#1e1e1e' : '#ffffff')
+    if (!clone.style.background) clone.style.background = bg
+
+    const serializer = new XMLSerializer()
+    const svgSource = serializer.serializeToString(clone)
+    const htmlSource = `<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html, body { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: ${bg}; }
+        svg { max-width: 100%; max-height: 100%; height: auto; width: auto; }
+      </style>
+      </head><body>${svgSource}</body></html>`
+    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
+  }
+
+  const attachMermaidViewerButton = wrap => {
+    let btn = wrap.querySelector('.mermaid-open-btn')
+    if (!btn) {
+      btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'mermaid-open-btn'
+      wrap.appendChild(btn)
+    }
+
+    btn.innerHTML = '<i class="fa fa-search fa-fw" aria-hidden="true"></i>'
+
+    if (!btn.__mermaidViewerBound) {
+      btn.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const svg = wrap.__mermaidOriginalSvg || wrap.querySelector('svg')
+        if (!svg) return
+        const initViewBox = wrap.__mermaidInitViewBox
+        openSvgInNewTab({ source: svg, initViewBox })
+      })
+      btn.__mermaidViewerBound = true
+    }
+  }
+
+  // Zoom around a point (px, py) in the SVG viewport (in viewBox coordinates)
+  const zoomAtPoint = (vb, factor, px, py) => {
+    const w = vb[2] * factor
+    const h = vb[3] * factor
+    const nx = px - (px - vb[0]) * factor
+    const ny = py - (py - vb[1]) * factor
+    return [nx, ny, w, h]
+  }
+
+  const initMermaidGestures = wrap => {
+    // Clean up previous event listeners and pending frames
+    if (wrap.__mermaidAbortController) {
+      wrap.__mermaidAbortController.abort()
+      if (wrap.__mermaidRafId) cancelAnimationFrame(wrap.__mermaidRafId)
+    }
+    const ac = new AbortController()
+    wrap.__mermaidAbortController = ac
+    const svg = wrap.querySelector('svg')
+    if (!svg) return
+
+    // Ensure viewBox exists so gestures always work
+    const initVb = getSvgViewBox(svg)
+    wrap.__mermaidInitViewBox = initVb
+    wrap.__mermaidCurViewBox = initVb.slice()
+    setSvgViewBox(svg, initVb)
+    // Disable default gestures to prevent scroll chaining and pinch-zoom penetration in Chrome
+    svg.style.touchAction = 'none'
+
+    // Cache BoundingClientRect, throttled on scroll to reduce reflow
+    let cachedRect = svg.getBoundingClientRect()
+    let rectDirty = false
+    const markRectDirty = () => { rectDirty = true }
+    window.addEventListener('resize', markRectDirty, { signal: ac.signal })
+    window.addEventListener('scroll', markRectDirty, { signal: ac.signal, capture: true })
+    const getRect = () => {
+      if (rectDirty) {
+        cachedRect = svg.getBoundingClientRect()
+        rectDirty = false
+      }
+      return cachedRect
+    }
+
+    // Precompute clamp bounds from initial viewBox
+    const minW = initVb[2] * 0.1
+    const maxW = initVb[2] * 10
+    const minH = initVb[3] * 0.1
+    const maxH = initVb[3] * 10
+    const clampVb = vb => {
+      const out = vb.slice()
+      out[2] = clamp(out[2], minW, maxW)
+      out[3] = clamp(out[3], minH, maxH)
+      return out
+    }
+
+    // Throttle DOM updates using requestAnimationFrame
+    let pendingVb = null
+    let rafId = null
+    const applyVb = () => {
+      if (pendingVb) {
+        wrap.__mermaidCurViewBox = pendingVb
+        setSvgViewBox(svg, pendingVb)
+        pendingVb = null
+      }
+      rafId = null
+      wrap.__mermaidRafId = null
+    }
+    const setCurVb = vb => {
+      pendingVb = clampVb(vb)
+      if (!rafId) {
+        rafId = requestAnimationFrame(applyVb)
+        wrap.__mermaidRafId = rafId
+      }
+    }
+
+    const state = {
+      pointers: new Map(),
+      startVb: null,
+      startDist: 0,
+      lastPointerX: 0,
+      lastPointerY: 0
+    }
+
+    const onPointerDown = e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      svg.setPointerCapture(e.pointerId)
+      const curVb = wrap.__mermaidCurViewBox
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      if (state.pointers.size === 1) {
+        state.startVb = curVb.slice()
+        state.lastPointerX = e.clientX
+        state.lastPointerY = e.clientY
+      } else if (state.pointers.size === 2) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        state.startDist = Math.hypot(dx, dy)
+        state.startVb = curVb.slice()
+      }
+    }
+
+    const onPointerMove = e => {
+      if (!state.pointers.has(e.pointerId)) return
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      const curVb = wrap.__mermaidCurViewBox
+      const rect = getRect()
+      if (state.pointers.size === 1 && state.startVb) {
+        const p = state.pointers.values().next().value
+        const dxClient = p.x - state.lastPointerX
+        const dyClient = p.y - state.lastPointerY
+        state.lastPointerX = p.x
+        state.lastPointerY = p.y
+        const dx = dxClient * (curVb[2] / rect.width)
+        const dy = dyClient * (curVb[3] / rect.height)
+        setCurVb([curVb[0] - dx, curVb[1] - dy, curVb[2], curVb[3]])
+        return
+      }
+      if (state.pointers.size === 2 && state.startVb && state.startDist > 0) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        const dist = Math.hypot(dx, dy)
+        if (!dist) return
+        const factor = state.startDist / dist
+        const cx = (pts[0].x + pts[1].x) / 2
+        const cy = (pts[0].y + pts[1].y) / 2
+        const px = curVb[0] + (cx - rect.left) * (curVb[2] / rect.width)
+        const py = curVb[1] + (cy - rect.top) * (curVb[3] / rect.height)
+        setCurVb(zoomAtPoint(state.startVb, factor, px, py))
+      }
+    }
+
+    const onPointerUpOrCancel = e => {
+      // Release PointerCapture to avoid event capture anomalies
+      if (svg.hasPointerCapture && svg.hasPointerCapture(e.pointerId)) {
+        svg.releasePointerCapture(e.pointerId)
+      }
+      state.pointers.delete(e.pointerId)
+      if (state.pointers.size === 0) {
+        state.startVb = null
+        state.startDist = 0
+      } else if (state.pointers.size === 1) {
+        const p = state.pointers.values().next().value
+        state.lastPointerX = p.x
+        state.lastPointerY = p.y
+      }
+    }
+
+    const onWheel = e => {
+      // Prevent event bubbling from triggering external scroll
+      e.preventDefault()
+      e.stopPropagation()
+      // Normalize deltaY across deltaMode (Chrome uses pixels, Safari uses lines)
+      let delta = e.deltaY
+      if (e.deltaMode === 1) delta *= 16
+      else if (e.deltaMode === 2) delta *= 400
+
+      // Continuous zoom factor: smoother than fixed 1.1/0.9 steps
+      const zoomFactor = Math.pow(1.001, delta)
+
+      const curVb = wrap.__mermaidCurViewBox
+      const rect = getRect()
+      const px = curVb[0] + (e.clientX - rect.left) * (curVb[2] / rect.width)
+      const py = curVb[1] + (e.clientY - rect.top) * (curVb[3] / rect.height)
+      setCurVb(zoomAtPoint(curVb, zoomFactor, px, py))
+    }
+
+    const onDblClick = () => {
+      const init = wrap.__mermaidInitViewBox
+      if (init) setCurVb(init)
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown, { signal: ac.signal })
+    svg.addEventListener('pointermove', onPointerMove, { signal: ac.signal })
+    svg.addEventListener('pointerup', onPointerUpOrCancel, { signal: ac.signal })
+    svg.addEventListener('pointercancel', onPointerUpOrCancel, { signal: ac.signal })
+    svg.addEventListener('wheel', onWheel, { passive: false, signal: ac.signal })
+    svg.addEventListener('dblclick', onDblClick, { signal: ac.signal })
+  }
+
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      // Clean up event listeners before removing old SVG
+      if (item.__mermaidAbortController) {
+        item.__mermaidAbortController.abort()
+      }
+      const oldSvg = item.querySelector('svg')
+      if (oldSvg) oldSvg.remove()
+      let config = {}
+      try {
+        config = mermaidSrc.dataset.config ? JSON.parse(mermaidSrc.dataset.config) : {}
+      } catch (e) {
+        console.warn('[mermaid] failed to parse dataset.config:', e)
+      }
+      if (!config.theme) {
+        config.theme = theme
+      }
+      const mermaidThemeConfig = `%%{init: ${JSON.stringify(config)}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+        if (true) initMermaidGestures(item)
+        item.__mermaidOriginalSvg = svg
+        if (true) attachMermaidViewerButton(item)
+      }
+
+      const handleError = err => {
+        console.error(`[mermaid] render failed for block #${index}:`, err)
+        const errorEl = document.createElement('div')
+        errorEl.className = 'mermaid-error'
+        errorEl.textContent = `Mermaid render error: ${err.message || err}`
+        mermaidSrc.insertAdjacentElement('afterend', errorEl)
+      }
+
+      try {
+        const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+        // mermaid v9 and v10 compatibility
+        if (typeof renderFn === 'string') {
+          renderMermaid(renderFn)
+        } else {
+          renderFn.then(({ svg }) => renderMermaid(svg)).catch(handleError)
+        }
+      } catch (err) {
+        handleError(err)
+      }
+    })
+  }
+
+  const codeToMermaid = $article => {
+    const codeMermaidEle = $article.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    const $article = document.getElementById('article-container')
+    if (!$article) return
+
+    if (true) codeToMermaid($article)
+    const $mermaid = $article.querySelectorAll('.mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/activate-power-mode.min.js"></script><script>POWERMODE.colorful = true;
+POWERMODE.shake = false;
+POWERMODE.mobile = false;
+document.body.addEventListener('input', POWERMODE);
+</script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js" defer="defer"></script><script>document.addEventListener('DOMContentLoaded', () => {
+  const pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"]):not([data-fancybox])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => {
+      try {
+        fn()
+      } catch (err) {
+        console.debug('Pjax callback failed:', err)
+      }
+    })
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      if (!item.parentNode) return
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || ''
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    const responseURL = e.request && e.request.responseURL
+    if (e.request && e.request.status === 404) {
+      true
+        ? pjax.loadUrl('/404.html')
+        : responseURL && (window.location.href = responseURL)
+    } else if (responseURL) {
+      window.location.href = responseURL
+    }
+  })
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
