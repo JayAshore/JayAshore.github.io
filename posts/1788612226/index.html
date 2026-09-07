@@ -1,9 +1,9 @@
-<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Agent面经宝典 | JayAshoreの博客</title><meta name="author" content="JayAshore"><meta name="copyright" content="JayAshore"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="百度 实践过程中，一个问题大概要多少loop  业务场景差异很大：简单日志排查、明确指令一般2‑3 轮 loop；问题模糊、需要多次查日志 + 核对接口、多步骤定位的复杂故障，普遍4‑8 轮；极少数边界疑难问题会冲到 8 轮以上。线上生产环境我们一般不会放任无限循环。   怎么评判这个loop次数是符合预期的呢？loop上限是依据什么取的  查询日志接口是现有的是吧，怎么保证不会一次拉取过多的日志">
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Agent面经宝典 | JayAshoreの博客</title><meta name="author" content="JayAshore"><meta name="copyright" content="JayAshore"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="百度 实践过程中，一个问题大概要多少loop  业务场景差异很大：简单日志排查、明确指令一般2‑3 轮 loop；问题模糊、需要多次查日志 + 核对接口、多步骤定位的复杂故障，普遍4‑8 轮；极少数边界疑难问题会冲到 8 轮以上。线上生产环境我们一般不会放任无限循环。   怎么评判这个loop次数是符合预期的呢？loop上限是依据什么取的?  通过业务效果 + 成本约束评判：评测集统计平均 &amp;#x">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Agent面经宝典">
 <meta property="og:url" content="https://jayashore.github.io/posts/1788612226/index.html">
 <meta property="og:site_name" content="JayAshoreの博客">
-<meta property="og:description" content="百度 实践过程中，一个问题大概要多少loop  业务场景差异很大：简单日志排查、明确指令一般2‑3 轮 loop；问题模糊、需要多次查日志 + 核对接口、多步骤定位的复杂故障，普遍4‑8 轮；极少数边界疑难问题会冲到 8 轮以上。线上生产环境我们一般不会放任无限循环。   怎么评判这个loop次数是符合预期的呢？loop上限是依据什么取的  查询日志接口是现有的是吧，怎么保证不会一次拉取过多的日志">
+<meta property="og:description" content="百度 实践过程中，一个问题大概要多少loop  业务场景差异很大：简单日志排查、明确指令一般2‑3 轮 loop；问题模糊、需要多次查日志 + 核对接口、多步骤定位的复杂故障，普遍4‑8 轮；极少数边界疑难问题会冲到 8 轮以上。线上生产环境我们一般不会放任无限循环。   怎么评判这个loop次数是符合预期的呢？loop上限是依据什么取的?  通过业务效果 + 成本约束评判：评测集统计平均 &amp;#x">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://jayashore.github.io/img/avatar.jpg">
 <meta property="article:published_time" content="2026-09-05T12:43:46.000Z">
@@ -202,17 +202,26 @@
   isHighlightShrink: false,
   isToc: true,
   pageType: 'post'
-}</script><link rel="stylesheet" href="/css/custom.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">26</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-book"></i><span> 文章</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li><li><a class="site-page child" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/charts/"><i class="fa-fw fas fa-chart-column"></i><span> 统计</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-earth-asia"></i><span> 社交</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/links/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fas fa-images"></i><span> 相册</span></a></li><li><a class="site-page child" href="/messages/"><i class="fa-fw fas fa-comments"></i><span> 留言</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/talks/"><i class="fa-fw fas fa-comment-dots"></i><span> 说说</span></a></div><div class="menus_item"><a class="site-page" href="/tools/"><i class="fa-fw fas fa-toolbox"></i><span> 工具</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/default_top_img.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">JayAshoreの博客</span></a><a class="nav-page-title" href="/"><span class="site-name">Agent面经宝典</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-book"></i><span> 文章</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li><li><a class="site-page child" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/charts/"><i class="fa-fw fas fa-chart-column"></i><span> 统计</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-earth-asia"></i><span> 社交</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/links/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fas fa-images"></i><span> 相册</span></a></li><li><a class="site-page child" href="/messages/"><i class="fa-fw fas fa-comments"></i><span> 留言</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/talks/"><i class="fa-fw fas fa-comment-dots"></i><span> 说说</span></a></div><div class="menus_item"><a class="site-page" href="/tools/"><i class="fa-fw fas fa-toolbox"></i><span> 工具</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Agent面经宝典</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-09-05T12:43:46.000Z" title="发表于 2026-09-05 20:43 20:43:46">2026-09-05 20:43</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-09-05T12:43:46.000Z" title="更新于 2026-09-05 20:43 20:43:46">2026-09-05 20:43</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%85%AB%E8%82%A1%E6%96%87/">八股文</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">13.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>45分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="百度"><a href="#百度" class="headerlink" title="百度"></a>百度</h1><ul>
+}</script><link rel="stylesheet" href="/css/custom.css"><meta name="generator" content="Hexo 8.1.2"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">26</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-book"></i><span> 文章</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li><li><a class="site-page child" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/charts/"><i class="fa-fw fas fa-chart-column"></i><span> 统计</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-earth-asia"></i><span> 社交</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/links/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fas fa-images"></i><span> 相册</span></a></li><li><a class="site-page child" href="/messages/"><i class="fa-fw fas fa-comments"></i><span> 留言</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/talks/"><i class="fa-fw fas fa-comment-dots"></i><span> 说说</span></a></div><div class="menus_item"><a class="site-page" href="/tools/"><i class="fa-fw fas fa-toolbox"></i><span> 工具</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/default_top_img.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">JayAshoreの博客</span></a><a class="nav-page-title" href="/"><span class="site-name">Agent面经宝典</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-book"></i><span> 文章</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li><li><a class="site-page child" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/charts/"><i class="fa-fw fas fa-chart-column"></i><span> 统计</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-earth-asia"></i><span> 社交</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/links/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fas fa-images"></i><span> 相册</span></a></li><li><a class="site-page child" href="/messages/"><i class="fa-fw fas fa-comments"></i><span> 留言</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/talks/"><i class="fa-fw fas fa-comment-dots"></i><span> 说说</span></a></div><div class="menus_item"><a class="site-page" href="/tools/"><i class="fa-fw fas fa-toolbox"></i><span> 工具</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Agent面经宝典</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-09-05T12:43:46.000Z" title="发表于 2026-09-05 20:43 20:43:46">2026-09-05 20:43</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-09-05T12:43:46.000Z" title="更新于 2026-09-05 20:43 20:43:46">2026-09-05 20:43</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%85%AB%E8%82%A1%E6%96%87/">八股文</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">14.2k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>47分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="百度"><a href="#百度" class="headerlink" title="百度"></a>百度</h1><ul>
 <li><p>实践过程中，一个问题大概要多少loop</p>
 <blockquote>
 <p>业务场景差异很大：简单日志排查、明确指令一般2‑3 轮 loop；问题模糊、需要多次查日志 + 核对接口、多步骤定位的复杂故障，普遍4‑8 轮；极少数边界疑难问题会冲到 8 轮以上。线上生产环境我们一般不会放任无限循环。</p>
 </blockquote>
 </li>
-<li><p>怎么评判这个loop次数是符合预期的呢？loop上限是依据什么取的</p>
+<li><p>怎么评判这个loop次数是符合预期的呢？loop上限是依据什么取的?</p>
+<blockquote>
+<p>通过业务效果 + 成本约束评判：评测集统计平均 &#x2F; 最大轮次，对比基准合理值；上限依据超时限制、token 开销、业务最长推理场景设定，防止无限循环。</p>
+</blockquote>
 </li>
 <li><p>查询日志接口是现有的是吧，怎么保证不会一次拉取过多的日志上下文爆掉呢</p>
+<blockquote>
+<p>复用已有日志接口；采用分页拉取 + 条数上限 + 超时截断，单批次限制上下文 token 大小，做流量熔断，避免内存 &#x2F; 请求打爆。</p>
+</blockquote>
 </li>
 <li><p>你们怎么去评估这个Agent的效果的呢？以及后续怎么优化的呢？</p>
+<blockquote>
+<p>评估：自动化评测集（任务成功率、步骤正确性、回答准确率）+ 线上日志抽样人工复核；<br>优化：分析失败 case，优化工具选择 prompt、调整 loop 策略、补充示例，迭代 Agent 提示词与路由逻辑。</p>
+</blockquote>
 </li>
 <li><p>这几个点都是一些不同维度的指标，有些指标变好，有些指标变差，这个时候怎么判断优化的结果怎么样呢？</p>
 <blockquote>
@@ -249,6 +258,9 @@
 </blockquote>
 </li>
 <li><p>embedding模型是多大的模型，有没有尝试过其他的embedding模型呢？</p>
+<blockquote>
+<p>我们用过小参数量（几十 M）到大模型配套的 Embedding（几百 M~ 数 B）的多款向量模型；业务上对比过开源 BGE、m3e、text‑embedding 系列等多个版本，根据召回效果、耗时、显存选型最终确定基线模型。</p>
+</blockquote>
 </li>
 <li><p>RRF融合排序是怎么做的？什么原理呢</p>
 <blockquote>
@@ -263,18 +275,38 @@
 </ol>
 <ul>
 <li><p>所以这个RRF是使用的向量检索的结果和ES的结果来进行融合的吧？</p>
+<blockquote>
+<p>是的，RRF（Reciprocal Rank Fusion）就是分别拿到向量召回、ES 关键词召回两条独立排序列表，利用各自排序得分做加权融合，输出一份合并后的候选文档列表。</p>
+</blockquote>
 </li>
 <li><p>为什么还要再做一次rerank</p>
+<blockquote>
+<p>RRF 只是基于排序位置做粗融合，没有理解语义相关性；rerank 模型会精细计算 query 和段落的语义匹配度，对融合后的候选集做高精度重排，过滤伪相关文档，提升最终答案质量。</p>
+</blockquote>
 </li>
 <li><p>怎么优化这个rerank的结果呢？怎么确保现在rerank的效果是好的</p>
+<blockquote>
+<p>1）更换更强的交叉编码器重排模型；<br>2）构造领域内正负样本微调 rerank；<br>3）调优打分阈值，控制送入大模型的候选条数；<br>4）自动化评测指标（Recall&#x2F;Precision&#x2F;F1）+ 抽样人工验收，对比基线验证效果提升。</p>
+</blockquote>
 </li>
 <li><p>人工标注的规模有多大</p>
+<blockquote>
+<p>按业务问答量级，一般是千条级别高质量标注样本做评测集，同时划分训练 &#x2F; 验证 &#x2F; 测试集，用于模型对比和版本回归测试。</p>
+</blockquote>
 </li>
 <li><p>这个RAG评测平台的目标是什么呢？</p>
+<blockquote>
+<p>标准化评估整套 RAG 链路（召回‑重排‑生成），量化不同 Embedding&#x2F;Rerank&#x2F; 检索策略的效果，快速迭代选型，减少重复实验成本。</p>
+</blockquote>
 </li>
 <li><p>为什么这个平台可以解决人工标注的问题</p>
+<blockquote>
+<p>平台支持自动评测指标计算、批量对比实验、答案相似度自动打分；只需要少量人工标注作为基准真值，大量候选样本可以先做自动化初筛，降低全量人工标注成本。</p>
+</blockquote>
 </li>
 <li><p>算法：输入一个数组，一个行数m，然后按照倒N的形状来输出</p>
+<blockquote>
+</blockquote>
 </li>
 <li><p>假如这个问题改成先从上到下，再从左往右这样排列，怎么改呢？</p>
 <blockquote>
